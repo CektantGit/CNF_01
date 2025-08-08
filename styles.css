@@ -20,7 +20,9 @@ canvas{display:block;}
 #transformBtns{position:absolute;top:10px;left:50%;transform:translateX(-50%);}
 #transformBtns button{margin:0 5px;}
 #coordsPanel{position:absolute;top:10px;right:10px;display:none;flex-direction:column;gap:5px;}
-#coordsPanel input{width:60px;text-align:center;}
+#coordsPanel input{width:60px;text-align:center;background:var(--color-White);border:1px solid var(--color-Borders-Main);border-radius:4px;padding:4px;color:var(--color-Text-Main);}
+#coordsPanel input::-webkit-outer-spin-button,#coordsPanel input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+#coordsPanel input[type=number]{-moz-appearance:textfield;}
 #objectActions{display:flex;gap:5px;margin-bottom:10px;}
 #canEmptyRow{display:flex;align-items:center;gap:5px;margin-bottom:10px;}
 #objectModal{position:fixed;top:10%;left:50%;transform:translateX(-50%);display:none;z-index:10;}
