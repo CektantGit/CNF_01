@@ -17,11 +17,14 @@ export function openObjectModal(modalEl, { onSelect }) {
     data.objs.forEach(obj => {
       const item = document.createElement('div');
       item.className = 'object-item';
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb';
       const img = document.createElement('img');
       img.src = obj.preview?.subRes?.small || obj.preview?.url || '';
+      thumb.appendChild(img);
       const span = document.createElement('span');
       span.textContent = obj.name;
-      item.appendChild(img);
+      item.appendChild(thumb);
       item.appendChild(span);
       item.addEventListener('click', () => {
         onSelect(obj);

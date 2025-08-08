@@ -20,10 +20,11 @@
     #objectModal .modal-box{background:white;border:1px solid #ccc;width:60vw;max-height:80vh;padding:20px;overflow:auto;position:relative;}
     #modalList{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;max-height:60vh;overflow:auto;}
     #objectModal .object-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1px solid #ccc;padding:5px;}
-    #objectModal .object-item img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#fff;margin-bottom:5px;}
+    #objectModal .object-item .thumb{width:100%;position:relative;padding-top:100%;background:#fff;margin-bottom:5px;}
+    #objectModal .object-item .thumb img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;}
     #objectModal .object-item span{display:block;text-align:center;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     #objectModal .pagination{display:flex;justify-content:center;margin-top:10px;}
-    #closeModal{position:absolute;top:-30px;right:20px;}
+    #closeModal{display:block;margin:10px auto 0;}
     .slot{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;cursor:pointer;}
     .slot.selected{background:#ddd;}
     .slot button{margin-left:5px;}
@@ -73,7 +74,6 @@
   </div>
   <div id="objectModal">
     <div class="modal-box">
-      <button id="closeModal">Close</button>
       <div id="modalList"></div>
       <div class="pagination">
         <button id="prevPage">Prev</button>
@@ -81,6 +81,7 @@
         <button id="nextPage">Next</button>
       </div>
     </div>
+    <button id="closeModal">Close</button>
   </div>
   <script type="module" src="./js/main.js"></script>
 </body>
