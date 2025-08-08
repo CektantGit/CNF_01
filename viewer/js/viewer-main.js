@@ -199,11 +199,8 @@ arBtn.addEventListener('click', async () => {
     const dataUrl = `data:model/gltf-binary;base64,${base64}`;
     const intent =
       `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(dataUrl)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
-    const link = document.createElement('a');
-    link.href = intent;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    const win = window.open(intent, '_blank');
+    if (win) win.focus();
   } else if (isIOS()) {
     const exporter = new USDZExporter();
     const arrayBuffer = await exporter.parseAsync(exportScene);
