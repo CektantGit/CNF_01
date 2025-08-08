@@ -70,7 +70,7 @@ const outlinePass = new OutlinePass(
   camera
 );
 outlinePass.edgeStrength = 3;
-outlinePass.visibleEdgeColor.set(0x808080);
+outlinePass.visibleEdgeColor.set(0x00aaff);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 composer.addPass(outlinePass);
 
