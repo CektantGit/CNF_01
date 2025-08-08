@@ -7,6 +7,9 @@ import { USDZExporter } from 'USDZExporter';
 import { EffectComposer } from 'EffectComposer';
 import { RenderPass } from 'RenderPass';
 import { OutlinePass } from 'OutlinePass';
+import { ShaderPass } from 'ShaderPass';
+import { FXAAShader } from 'FXAAShader';
+import { OutputPass } from 'OutputPass';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots } from './viewer-ui.js';
 import { fetchObjectDetails } from './viewer-api.js';
@@ -53,9 +56,14 @@ const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 const outlinePass = new OutlinePass(new THREE.Vector2(1, 1), scene, camera);
 outlinePass.edgeStrength = 3;
-outlinePass.visibleEdgeColor.set(0x666666);
+outlinePass.visibleEdgeColor.set(0x008efa);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 composer.addPass(outlinePass);
+const outputPass = new OutputPass();
+composer.addPass(outputPass);
+const effectFXAA = new ShaderPass(FXAAShader);
+effectFXAA.uniforms['resolution'].value.set(1 / container.clientWidth, 1 / container.clientHeight);
+composer.addPass(effectFXAA);
 
 function resize() {
   const w = container.clientWidth;
@@ -63,6 +71,7 @@ function resize() {
   renderer.setSize(w, h);
   composer.setSize(w, h);
   outlinePass.setSize(w, h);
+  effectFXAA.uniforms['resolution'].value.set(1 / w, 1 / h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }

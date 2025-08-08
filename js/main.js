@@ -6,6 +6,9 @@ import { TransformControls } from 'TransformControls';
 import { EffectComposer } from 'EffectComposer';
 import { RenderPass } from 'RenderPass';
 import { OutlinePass } from 'OutlinePass';
+import { ShaderPass } from 'ShaderPass';
+import { FXAAShader } from 'FXAAShader';
+import { OutputPass } from 'OutputPass';
 import { ConfiguratorState } from './state.js';
 import { renderSlots, renderObjects, renderSlotsMobile } from './ui.js';
 import { openObjectModal } from './modal.js';
@@ -74,9 +77,14 @@ const outlinePass = new OutlinePass(
   camera
 );
 outlinePass.edgeStrength = 3;
-outlinePass.visibleEdgeColor.set(0x666666);
+outlinePass.visibleEdgeColor.set(0x008efa);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 composer.addPass(outlinePass);
+const outputPass = new OutputPass();
+composer.addPass(outputPass);
+const effectFXAA = new ShaderPass(FXAAShader);
+effectFXAA.uniforms['resolution'].value.set(1 / viewer.clientWidth, 1 / viewer.clientHeight);
+composer.addPass(effectFXAA);
 
 // lighting similar to gltf-viewer defaults
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
@@ -102,6 +110,7 @@ function isMobile(){
 function handleResize(){
   renderer.setSize(viewer.clientWidth, viewer.clientHeight);
   composer.setSize(viewer.clientWidth, viewer.clientHeight);
+  effectFXAA.uniforms['resolution'].value.set(1 / viewer.clientWidth, 1 / viewer.clientHeight);
   camera.aspect = viewer.clientWidth / viewer.clientHeight;
   camera.updateProjectionMatrix();
   renderUI();
