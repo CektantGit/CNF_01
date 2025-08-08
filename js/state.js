@@ -4,6 +4,11 @@ export class ConfiguratorState {
     this.currentSlotIndex = -1;
   }
 
+  clear() {
+    this.slots = [];
+    this.currentSlotIndex = -1;
+  }
+
   addSlot(name = 'New slot') {
     const slot = {
       id: crypto.randomUUID(),
@@ -13,6 +18,20 @@ export class ConfiguratorState {
     };
     this.slots.push(slot);
     this.currentSlotIndex = this.slots.length - 1;
+    return slot;
+  }
+
+  addSlotFromData(id, name, objects = []) {
+    const slot = {
+      id,
+      name,
+      objects,
+      selectedObjectIndex: objects.length ? 0 : -1
+    };
+    this.slots.push(slot);
+    if (this.currentSlotIndex === -1) {
+      this.currentSlotIndex = 0;
+    }
     return slot;
   }
 
@@ -46,6 +65,15 @@ export class ConfiguratorState {
     this.currentSlot.objects.push(obj);
     this.currentSlot.selectedObjectIndex = this.currentSlot.objects.length - 1;
     return obj;
+  }
+
+  inheritFromFirst(slot) {
+    if (!slot || slot.objects.length < 2) return;
+    const first = slot.objects[0];
+    slot.objects.slice(1).forEach(obj => {
+      obj.transform.position = [...first.transform.position];
+      obj.transform.rotation = [...first.transform.rotation];
+    });
   }
 
   exportJSON() {

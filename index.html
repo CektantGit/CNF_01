@@ -11,8 +11,11 @@
     #objectsPanel{border-left:1px solid #ccc;}
     #viewer{flex:1;position:relative;}
     canvas{display:block;}
-    #exportBtn{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);}
-    #transformModeBtn{position:absolute;top:10px;left:50%;transform:translateX(-50%);}
+    #bottomBtns{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);}
+    #bottomBtns button{margin:0 5px;}
+    #transformBtns{position:absolute;top:10px;left:50%;transform:translateX(-50%);}
+    #transformBtns button{margin:0 5px;}
+    #objectActions{display:flex;gap:5px;margin-bottom:10px;}
     #objectModal{position:fixed;top:10%;left:50%;transform:translateX(-50%);width:60%;max-height:80%;background:white;border:1px solid #ccc;overflow:auto;display:none;padding:20px;z-index:10;}
     #objectModal .object-item{display:flex;align-items:center;margin-bottom:10px;cursor:pointer;}
     #objectModal img{width:80px;height:80px;object-fit:cover;margin-right:10px;}
@@ -44,11 +47,22 @@
       <ul id="slots"></ul>
     </div>
     <div id="viewer">
-      <button id="transformModeBtn">Toggle Transform</button>
-      <button id="exportBtn">Export JSON</button>
+      <div id="transformBtns">
+        <button id="moveBtn">Move</button>
+        <button id="rotateBtn">Rotate</button>
+        <button id="noneBtn">None</button>
+      </div>
+      <div id="bottomBtns">
+        <button id="exportBtn">Export JSON</button>
+        <button id="importBtn">Import JSON</button>
+        <input type="file" id="importInput" accept="application/json" style="display:none" />
+      </div>
     </div>
     <div id="objectsPanel">
-      <button id="addObjectBtn">Add object</button>
+      <div id="objectActions">
+        <button id="addObjectBtn">Add object</button>
+        <button id="inheritBtn">Inherit first</button>
+      </div>
       <div id="objects"></div>
     </div>
   </div>

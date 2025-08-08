@@ -5,16 +5,22 @@ import { TransformControls } from 'TransformControls';
 import { ConfiguratorState } from './state.js';
 import { renderSlots, renderObjects } from './ui.js';
 import { openObjectModal } from './modal.js';
+import { fetchObjectDetails } from './api.js';
 
 const state = new ConfiguratorState();
 
 const slotListEl = document.getElementById('slots');
 const addSlotBtn = document.getElementById('addSlotBtn');
 const addObjectBtn = document.getElementById('addObjectBtn');
+const inheritBtn = document.getElementById('inheritBtn');
 const objectsContainer = document.getElementById('objects');
 const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const importInput = document.getElementById('importInput');
 const modalEl = document.getElementById('objectModal');
-const transformBtn = document.getElementById('transformModeBtn');
+const moveBtn = document.getElementById('moveBtn');
+const rotateBtn = document.getElementById('rotateBtn');
+const noneBtn = document.getElementById('noneBtn');
 
 // THREE.js setup
 const viewer = document.getElementById('viewer');
@@ -196,20 +202,77 @@ exportBtn.addEventListener('click', () => {
   URL.revokeObjectURL(a.href);
 });
 
-transformBtn.addEventListener('click', () => {
-  if (transformMode === null) {
-    transformMode = 'translate';
-    transform.setMode('translate');
-    transform.enabled = true;
-  } else if (transformMode === 'translate') {
-    transformMode = 'rotate';
-    transform.setMode('rotate');
-  } else {
-    transformMode = null;
-    transform.enabled = false;
-    transform.detach();
+importBtn.addEventListener('click', () => importInput.click());
+importInput.addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    await importConfig(data);
+  } catch (err) {
+    console.error('Import failed', err);
   }
+  importInput.value = '';
 });
+
+moveBtn.addEventListener('click', () => {
+  transformMode = 'translate';
+  transform.setMode('translate');
+  transform.enabled = true;
+  if (transform.object) transform.attach(transform.object);
+});
+
+rotateBtn.addEventListener('click', () => {
+  transformMode = 'rotate';
+  transform.setMode('rotate');
+  transform.enabled = true;
+  if (transform.object) transform.attach(transform.object);
+});
+
+noneBtn.addEventListener('click', () => {
+  transformMode = null;
+  transform.enabled = false;
+  transform.detach();
+});
+
+inheritBtn.addEventListener('click', () => {
+  const slot = state.currentSlot;
+  state.inheritFromFirst(slot);
+  if (slot) loadSlot(slot, true);
+});
+
+async function importConfig(data) {
+  state.clear();
+  Object.values(meshes).forEach(m => {
+    if (transform.object === m) transform.detach();
+    scene.remove(m);
+  });
+  Object.keys(meshes).forEach(k => delete meshes[k]);
+  const entries = Object.entries(data.slots || {});
+  for (const [id, slotData] of entries) {
+    const objects = [];
+    for (const objData of slotData.objects || []) {
+      const details = await fetchObjectDetails(objData.uuid);
+      if (!details) continue;
+      objects.push({
+        uuid: objData.uuid,
+        name: details.name,
+        materials: details.materials || [],
+        selectedMaterial: 0,
+        transform: {
+          position: objData.position || [0, 0, 0],
+          rotation: objData.rotation || [0, 0, 0],
+          scale: objData.scale || [1, 1, 1]
+        }
+      });
+    }
+    state.addSlotFromData(id, slotData.name, objects);
+  }
+  renderSlots(state, slotListEl, slotCallbacks);
+  renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+  if (state.currentSlot) loadSlot(state.currentSlot, true);
+}
 
 // initialize
 state.addSlot();
