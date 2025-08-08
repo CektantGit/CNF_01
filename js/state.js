@@ -76,6 +76,30 @@ export class ConfiguratorState {
     });
   }
 
+  async importJSON(data, fetchDetails) {
+    this.clear();
+    const entries = Object.entries(data.slots || {});
+    for (const [id, slotData] of entries) {
+      const objects = [];
+      for (const objData of slotData.objects || []) {
+        const details = await fetchDetails(objData.uuid);
+        if (!details) continue;
+        objects.push({
+          uuid: objData.uuid,
+          name: details.name,
+          materials: details.materials || [],
+          selectedMaterial: 0,
+          transform: {
+            position: objData.position || [0, 0, 0],
+            rotation: objData.rotation || [0, 0, 0],
+            scale: objData.scale || [1, 1, 1]
+          }
+        });
+      }
+      this.addSlotFromData(id, slotData.name, objects);
+    }
+  }
+
   exportJSON() {
     const slotsOut = {};
     this.slots.forEach(slot => {

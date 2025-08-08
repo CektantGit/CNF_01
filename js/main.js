@@ -209,7 +209,7 @@ importInput.addEventListener('change', async e => {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    await importConfig(data);
+    await handleImport(data);
   } catch (err) {
     console.error('Import failed', err);
   }
@@ -242,36 +242,21 @@ inheritBtn.addEventListener('click', () => {
   if (slot) loadSlot(slot, true);
 });
 
-async function importConfig(data) {
-  state.clear();
+async function handleImport(data) {
   Object.values(meshes).forEach(m => {
     if (transform.object === m) transform.detach();
     scene.remove(m);
   });
   Object.keys(meshes).forEach(k => delete meshes[k]);
-  const entries = Object.entries(data.slots || {});
-  for (const [id, slotData] of entries) {
-    const objects = [];
-    for (const objData of slotData.objects || []) {
-      const details = await fetchObjectDetails(objData.uuid);
-      if (!details) continue;
-      objects.push({
-        uuid: objData.uuid,
-        name: details.name,
-        materials: details.materials || [],
-        selectedMaterial: 0,
-        transform: {
-          position: objData.position || [0, 0, 0],
-          rotation: objData.rotation || [0, 0, 0],
-          scale: objData.scale || [1, 1, 1]
-        }
-      });
-    }
-    state.addSlotFromData(id, slotData.name, objects);
-  }
+
+  await state.importJSON(data, fetchObjectDetails);
+
   renderSlots(state, slotListEl, slotCallbacks);
   renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
-  if (state.currentSlot) loadSlot(state.currentSlot, true);
+
+  state.slots.forEach((slot, idx) => {
+    loadSlot(slot, idx === state.currentSlotIndex);
+  });
 }
 
 // initialize

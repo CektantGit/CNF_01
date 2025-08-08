@@ -3,9 +3,7 @@ export function renderSlots(state, container, { onSelect, onDelete }) {
   state.slots.forEach((slot, index) => {
     const li = document.createElement('li');
     li.className = 'slot' + (index === state.currentSlotIndex ? ' selected' : '');
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = slot.name;
-    nameSpan.addEventListener('click', () => {
+    li.addEventListener('click', () => {
       if (state.currentSlotIndex === index) {
         const newName = prompt('Rename slot', slot.name);
         if (newName) {
@@ -16,6 +14,8 @@ export function renderSlots(state, container, { onSelect, onDelete }) {
         onSelect(index);
       }
     });
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = slot.name;
     const delBtn = document.createElement('button');
     delBtn.textContent = 'X';
     delBtn.addEventListener('click', e => {
