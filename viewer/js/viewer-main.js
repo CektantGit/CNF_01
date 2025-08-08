@@ -18,12 +18,12 @@ const importInput = document.getElementById('importInput');
 const arBtn = document.getElementById('arBtn');
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setClearColor(0xffffff, 1);
 container.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
-camera.position.set(3, 3, 3);
+camera.position.set(0, 1, 3);
 controls.update();
 
 const pmrem = new THREE.PMREMGenerator(renderer);
@@ -37,9 +37,9 @@ new RGBELoader().load(
   }
 );
 
-const ambient = new THREE.AmbientLight(0xffffff, 1);
+const ambient = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambient);
-const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.3);
 scene.add(hemi);
 
 // postprocessing for hover outline

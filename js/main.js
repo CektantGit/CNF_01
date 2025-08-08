@@ -64,14 +64,20 @@ const composer = new EffectComposer(renderer);
 composer.setSize(viewer.clientWidth, viewer.clientHeight);
 const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
-const outlinePass = new OutlinePass(new THREE.Vector2(viewer.clientWidth, viewer.clientHeight), scene, camera);
+const outlinePass = new OutlinePass(
+  new THREE.Vector2(viewer.clientWidth, viewer.clientHeight),
+  scene,
+  camera
+);
 outlinePass.edgeStrength = 3;
+outlinePass.visibleEdgeColor.set(0x808080);
+outlinePass.hiddenEdgeColor.set(0x808080);
 composer.addPass(outlinePass);
 
 // soft, even lighting across the scene
-const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
-const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.3);
 scene.add(hemiLight);
 
 const grid = new THREE.GridHelper(10, 10);
