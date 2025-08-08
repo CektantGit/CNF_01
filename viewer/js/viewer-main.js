@@ -36,6 +36,8 @@ const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 const outlinePass = new OutlinePass(new THREE.Vector2(1, 1), scene, camera);
 outlinePass.edgeStrength = 3;
+outlinePass.visibleEdgeColor.set(0x808080);
+outlinePass.hiddenEdgeColor.set(0x808080);
 composer.addPass(outlinePass);
 
 function resize() {
@@ -197,7 +199,7 @@ function handleHover(event) {
   const objs = state.slots.map((s) => s.currentMesh).filter(Boolean);
   const intersect = raycaster.intersectObjects(objs, true)[0];
   let obj = intersect ? intersect.object : null;
-  while (obj && !obj.userData.slotIdx) obj = obj.parent;
+  while (obj && obj.userData.slotIdx === undefined) obj = obj.parent;
   setHovered(obj);
 }
 
@@ -210,7 +212,7 @@ function handleSceneClick(event) {
   const intersect = raycaster.intersectObjects(objs, true)[0];
   if (!intersect) return;
   let obj = intersect.object;
-  while (obj && !obj.userData.slotIdx) obj = obj.parent;
+  while (obj && obj.userData.slotIdx === undefined) obj = obj.parent;
   if (!obj) return;
   const slotIdx = obj.userData.slotIdx;
   const objIdx = obj.userData.objIdx;
