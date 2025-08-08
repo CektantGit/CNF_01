@@ -23,6 +23,10 @@ const moveBtn = document.getElementById('moveBtn');
 const rotateBtn = document.getElementById('rotateBtn');
 const noneBtn = document.getElementById('noneBtn');
 const gridBtn = document.getElementById('gridBtn');
+const coordsPanel = document.getElementById('coordsPanel');
+const coordX = document.getElementById('coordX');
+const coordY = document.getElementById('coordY');
+const coordZ = document.getElementById('coordZ');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const progressBar = document.getElementById('progressBar');
 
@@ -66,6 +70,44 @@ window.addEventListener('resize', () => {
 const meshes = {};
 let transformMode = null;
 
+const axisNames = ['x','y','z'];
+
+function updateCoordInputs(){
+  if (transformMode === null || !transform.object) {
+    coordsPanel.style.display = 'none';
+    return;
+  }
+  coordsPanel.style.display = 'flex';
+  if (transformMode === 'translate') {
+    coordX.value = transform.object.position.x.toFixed(2);
+    coordY.value = transform.object.position.y.toFixed(2);
+    coordZ.value = transform.object.position.z.toFixed(2);
+  } else if (transformMode === 'rotate') {
+    coordX.value = THREE.MathUtils.radToDeg(transform.object.rotation.x).toFixed(1);
+    coordY.value = THREE.MathUtils.radToDeg(transform.object.rotation.y).toFixed(1);
+    coordZ.value = THREE.MathUtils.radToDeg(transform.object.rotation.z).toFixed(1);
+  }
+}
+
+[coordX, coordY, coordZ].forEach((input, idx) => {
+  input.addEventListener('focus', () => input.select());
+  input.addEventListener('change', () => {
+    if (!transform.object) return;
+    const val = parseFloat(input.value);
+    if (isNaN(val)) return;
+    const obj = transform.object.userData.stateObj;
+    if (transformMode === 'translate') {
+      transform.object.position[axisNames[idx]] = val;
+      obj.transform.position[idx] = val;
+    } else if (transformMode === 'rotate') {
+      const rad = THREE.MathUtils.degToRad(val);
+      transform.object.rotation[axisNames[idx]] = rad;
+      obj.transform.rotation[idx] = val;
+    }
+    updateCoordInputs();
+  });
+});
+
 function showLoading(){
   loadingOverlay.style.display='flex';
   progressBar.style.width='0%';
@@ -96,6 +138,7 @@ transform.addEventListener('objectChange', () => {
     THREE.MathUtils.radToDeg(transform.object.rotation.z)
   ];
   obj.transform.scale = [transform.object.scale.x, transform.object.scale.y, transform.object.scale.z];
+  updateCoordInputs();
 });
 
 function loadObject(slot, obj, attach = false) {
@@ -141,7 +184,10 @@ function loadSlot(slot, attach = false) {
     scene.remove(existing);
     delete meshes[slot.id];
   }
-  if (slot.hidden || slot.selectedObjectIndex === -1) return;
+  if (slot.hidden || slot.selectedObjectIndex === -1) {
+    updateCoordInputs();
+    return;
+  }
   const obj = slot.objects[slot.selectedObjectIndex];
   loadObject(slot, obj, attach && transformMode !== null);
 }
@@ -151,6 +197,7 @@ function attachTransformControls(mesh, obj) {
   mesh.userData.stateObj = obj;
   transform.attach(mesh);
   transform.enabled = true;
+  updateCoordInputs();
 }
 
 function activateSlot(slot) {
@@ -159,6 +206,7 @@ function activateSlot(slot) {
   }
   if (!slot || slot.selectedObjectIndex === -1 || slot.hidden) {
     transform.detach();
+    updateCoordInputs();
     return;
   }
   const mesh = meshes[slot.id];
@@ -168,6 +216,7 @@ function activateSlot(slot) {
     loadSlot(slot, transformMode !== null);
   }
   transform.enabled = transformMode !== null;
+  updateCoordInputs();
 }
 
 function handleSceneClick(event) {
@@ -304,6 +353,7 @@ moveBtn.addEventListener('click', () => {
     const mesh = meshes[state.currentSlot?.id];
     if (mesh) transform.attach(mesh);
   }
+  updateCoordInputs();
 });
 
 rotateBtn.addEventListener('click', () => {
@@ -316,12 +366,14 @@ rotateBtn.addEventListener('click', () => {
     const mesh = meshes[state.currentSlot?.id];
     if (mesh) transform.attach(mesh);
   }
+  updateCoordInputs();
 });
 
 noneBtn.addEventListener('click', () => {
   transformMode = null;
   transform.enabled = false;
   transform.detach();
+  updateCoordInputs();
 });
 
 gridBtn.addEventListener('click', () => {

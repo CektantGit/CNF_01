@@ -19,6 +19,8 @@ canvas{display:block;}
 #bottomBtns button{margin:0 5px;}
 #transformBtns{position:absolute;top:10px;left:50%;transform:translateX(-50%);}
 #transformBtns button{margin:0 5px;}
+#coordsPanel{position:absolute;top:10px;right:10px;display:none;flex-direction:column;gap:5px;}
+#coordsPanel input{width:60px;text-align:center;}
 #objectActions{display:flex;gap:5px;margin-bottom:10px;}
 #canEmptyRow{display:flex;align-items:center;gap:5px;margin-bottom:10px;}
 #objectModal{position:fixed;top:10%;left:50%;transform:translateX(-50%);display:none;z-index:10;}
