@@ -47,10 +47,24 @@ animate();
 const state = new ViewerState();
 const loader = new GLTFLoader();
 
-function prepareExportScene(src) {
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function buildExportScene(srcScene) {
   const expScene = new THREE.Scene();
-  src.traverse((child) => {
-    if (child.isMesh) {
+  const pos = new THREE.Vector3();
+  const quat = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+
+  srcScene.traverse((child) => {
+    if (child.isMesh && child.visible) {
       const material = Array.isArray(child.material)
         ? child.material.map((m) => {
             const mat = m.clone();
@@ -62,13 +76,22 @@ function prepareExportScene(src) {
             mat.side = THREE.FrontSide;
             return mat;
           })();
-      const mesh = new THREE.Mesh(child.geometry.clone(), material);
-      mesh.position.copy(child.position);
-      mesh.quaternion.copy(child.quaternion);
-      mesh.scale.copy(child.scale);
+      const geometry = child.geometry.clone();
+      child.updateWorldMatrix(true, false);
+      child.matrixWorld.decompose(pos, quat, scale);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.copy(pos);
+      mesh.quaternion.copy(quat);
+      mesh.scale.copy(scale);
       expScene.add(mesh);
     }
   });
+
+  const box = new THREE.Box3().setFromObject(expScene);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+  expScene.children.forEach((c) => c.position.sub(center));
+
   return expScene;
 }
 
@@ -167,53 +190,28 @@ importInput.addEventListener('change', (e) => {
 });
 
 arBtn.addEventListener('click', async () => {
-  const meshes = state.slots.map((s) => s.currentMesh).filter(Boolean);
-  if (!meshes.length) return;
-
-  const group = new THREE.Group();
-  meshes.forEach((m) => group.add(m.clone(true)));
-  group.traverse((obj) => {
-    if (obj.isMesh) {
-      obj.geometry = obj.geometry.clone();
-      obj.material = obj.material.clone();
-      obj.userData = {};
-    }
-    obj.updateMatrixWorld(true);
-  });
-
-  // center group so exported model is around origin
-  const box = new THREE.Box3().setFromObject(group);
-  const center = new THREE.Vector3();
-  box.getCenter(center);
-  group.children.forEach((c) => c.position.sub(center));
-
-  const exportScene = prepareExportScene(group);
+  const exportScene = buildExportScene(scene);
+  if (!exportScene.children.length) return;
 
   if (isAndroid()) {
     const exporter = new GLTFExporter();
     const arrayBuffer = await exporter.parseAsync(exportScene, { binary: true });
-    const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
-    const url = URL.createObjectURL(blob);
-    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(url)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
-    const a = document.createElement('a');
-    a.href = intent;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    const base64 = arrayBufferToBase64(arrayBuffer);
+    const dataUrl = `data:model/gltf-binary;base64,${base64}`;
+    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(dataUrl)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
+    window.location.href = intent;
   } else if (isIOS()) {
     const exporter = new USDZExporter();
     const arrayBuffer = await exporter.parseAsync(exportScene);
-    const blob = new Blob([arrayBuffer], { type: 'model/vnd.usdz+zip' });
-    const url = URL.createObjectURL(blob);
+    const base64 = arrayBufferToBase64(arrayBuffer);
+    const dataUrl = `data:model/vnd.usdz+zip;base64,${base64}`;
     const a = document.createElement('a');
     a.rel = 'ar';
-    a.href = url;
+    a.href = dataUrl;
     a.setAttribute('download', 'scene.usdz');
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
   } else {
     alert('AR not supported');
   }
