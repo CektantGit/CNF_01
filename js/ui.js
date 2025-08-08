@@ -77,3 +77,62 @@ export function renderObjects(slot, container, { onSelectObject, onSelectMateria
     container.appendChild(card);
   });
 }
+
+export function renderSlotsMobile(state, container, slotCallbacks, objectCallbacks){
+  container.innerHTML='';
+  state.slots.forEach((slot, index)=>{
+    const det=document.createElement('details');
+    det.className='slot-mobile';
+    det.open = slot._mobileOpen || false;
+    det.addEventListener('toggle',()=>{slot._mobileOpen = det.open;});
+    const sum=document.createElement('summary');
+    sum.textContent=slot.name;
+    sum.addEventListener('click',e=>{
+      if(state.currentSlotIndex===index){
+        if(e.detail===2){
+          const newName=prompt('Rename slot',slot.name);
+          if(newName){slot.name=newName;renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);} }
+      }else{
+        slotCallbacks.onSelect(index);
+      }
+    });
+    const actions=document.createElement('span');
+    actions.className='slot-actions';
+    const hide=document.createElement('button');
+    hide.textContent='Hide';
+    hide.className='hide-btn'+(slot.hidden?' active':'');
+    hide.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onToggleHide(slot);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);});
+    const del=document.createElement('button');
+    del.textContent='X';
+    del.className='action-btn';
+    del.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onDelete(slot.id);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);});
+    actions.appendChild(hide);actions.appendChild(del);sum.appendChild(actions);
+    det.appendChild(sum);
+    const body=document.createElement('div');
+    slot.objects.forEach((obj,objIndex)=>{
+      const card=document.createElement('div');
+      card.className='obj-card'+(objIndex===slot.selectedObjectIndex?' selected':'');
+      const title=document.createElement('div');
+      title.textContent=obj.name;
+      title.addEventListener('click',()=>{state.currentSlotIndex=index;objectCallbacks.onSelectObject(objIndex);});
+      const delBtn=document.createElement('button');
+      delBtn.textContent='Delete';
+      delBtn.className='action-btn';
+      delBtn.addEventListener('click',()=>{state.currentSlotIndex=index;objectCallbacks.onDelete(objIndex);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);});
+      const matList=document.createElement('div');
+      matList.className='material-list';
+      obj.materials.forEach((mat,matIndex)=>{
+        const btn=document.createElement('button');
+        const img=document.createElement('img');
+        const url=mat.previews?.[0]?.subRes?.small||mat.previews?.[0]?.url;
+        img.src=url||'';img.alt=mat.name;btn.appendChild(img);
+        btn.addEventListener('click',e=>{e.stopPropagation();state.currentSlotIndex=index;objectCallbacks.onSelectMaterial(objIndex,matIndex);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);});
+        if(objIndex===slot.selectedObjectIndex && matIndex===obj.selectedMaterial){btn.classList.add('selected');}
+        matList.appendChild(btn);
+      });
+      card.appendChild(title);card.appendChild(delBtn);card.appendChild(matList);body.appendChild(card);
+    });
+    det.appendChild(body);
+    container.appendChild(det);
+  });
+}

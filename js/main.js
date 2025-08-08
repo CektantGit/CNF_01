@@ -3,7 +3,7 @@ import { OrbitControls } from 'OrbitControls';
 import { GLTFLoader } from 'GLTFLoader';
 import { TransformControls } from 'TransformControls';
 import { ConfiguratorState } from './state.js';
-import { renderSlots, renderObjects } from './ui.js';
+import { renderSlots, renderObjects, renderSlotsMobile } from './ui.js';
 import { openObjectModal } from './modal.js';
 import { fetchObjectDetails } from './api.js';
 
@@ -61,11 +61,18 @@ const pointer = new THREE.Vector2();
 let pointerDown = null;
 let pointerMoved = false;
 
-window.addEventListener('resize', () => {
+function isMobile(){
+  return window.innerWidth <= 768;
+}
+
+function handleResize(){
   renderer.setSize(viewer.clientWidth, viewer.clientHeight);
   camera.aspect = viewer.clientWidth / viewer.clientHeight;
   camera.updateProjectionMatrix();
-});
+  renderUI();
+}
+
+window.addEventListener('resize', handleResize);
 
 const meshes = {};
 let transformMode = null;
@@ -241,8 +248,7 @@ function handleSceneClick(event) {
 const slotCallbacks = {
   onSelect(index) {
     state.currentSlotIndex = index;
-    renderSlots(state, slotListEl, slotCallbacks);
-    renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+    renderUI();
     canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
     activateSlot(state.currentSlot);
   },
@@ -254,8 +260,7 @@ const slotCallbacks = {
       delete meshes[id];
     }
     state.removeSlot(id);
-    renderSlots(state, slotListEl, slotCallbacks);
-    renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+    renderUI();
     canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
     activateSlot(state.currentSlot);
   },
@@ -271,7 +276,7 @@ const slotCallbacks = {
     } else {
       loadSlot(slot, slot === state.currentSlot);
     }
-    renderSlots(state, slotListEl, slotCallbacks);
+    renderUI();
   }
 };
 
@@ -279,7 +284,7 @@ const objectCallbacks = {
   onSelectObject(index) {
     const slot = state.currentSlot;
     slot.selectedObjectIndex = index;
-    renderObjects(slot, objectsContainer, objectCallbacks);
+    renderUI();
     loadSlot(slot, true);
   },
   onSelectMaterial(objIndex, matIndex) {
@@ -287,7 +292,7 @@ const objectCallbacks = {
     slot.selectedObjectIndex = objIndex;
     const obj = slot.objects[objIndex];
     obj.selectedMaterial = matIndex;
-    renderObjects(slot, objectsContainer, objectCallbacks);
+    renderUI();
     loadSlot(slot, true);
   },
   onDelete(objIndex) {
@@ -296,15 +301,14 @@ const objectCallbacks = {
     if (slot.selectedObjectIndex >= slot.objects.length) {
       slot.selectedObjectIndex = slot.objects.length - 1;
     }
-    renderObjects(slot, objectsContainer, objectCallbacks);
+    renderUI();
     loadSlot(slot, true);
   }
 };
 
 addSlotBtn.addEventListener('click', () => {
   state.addSlot();
-  renderSlots(state, slotListEl, slotCallbacks);
-  renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+  renderUI();
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
 });
 
@@ -315,7 +319,7 @@ addObjectBtn.addEventListener('click', () => {
       const details = await fetchObjectDetails(objData.uuid);
       if (!details) return;
       state.addObjectToCurrent(details);
-      renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+      renderUI();
       loadSlot(state.currentSlot, true);
     }
   });
@@ -419,10 +423,10 @@ async function handleImport(data) {
   });
   Object.keys(meshes).forEach(k => delete meshes[k]);
 
+  setTransformMode(null);
   await state.importJSON(data, fetchObjectDetails);
 
-  renderSlots(state, slotListEl, slotCallbacks);
-  renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+  renderUI();
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
 
   state.slots.forEach((slot, idx) => {
@@ -432,8 +436,19 @@ async function handleImport(data) {
 
 // initialize
 state.addSlot();
-renderSlots(state, slotListEl, slotCallbacks);
-renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+
+function renderUI(){
+  if(isMobile()){
+    objectsContainer.parentElement.style.display='none';
+    renderSlotsMobile(state, slotListEl, slotCallbacks, objectCallbacks);
+  }else{
+    objectsContainer.parentElement.style.display='block';
+    renderSlots(state, slotListEl, slotCallbacks);
+    renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+  }
+}
+
+renderUI();
 canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
 activateSlot(state.currentSlot);
 updateTransformButtons();

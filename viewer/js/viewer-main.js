@@ -138,20 +138,19 @@ arBtn.addEventListener('click', async () => {
   if (!meshes.length) return;
   const group = new THREE.Group();
   meshes.forEach((m) => group.add(m.clone()));
+  group.traverse(obj=>obj.updateMatrixWorld(true));
+  // center group so exported model is around origin
+  const box = new THREE.Box3().setFromObject(group);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+  group.children.forEach((c) => c.position.sub(center));
   if (isAndroid()) {
     const exporter = new GLTFExporter();
-    exporter.parse(
-      group,
-      (gltf) => {
-        const blob = new Blob([gltf], { type: 'model/gltf-binary' });
-        const url = URL.createObjectURL(blob);
-        const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(
-          url
-        )}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
-        window.location.href = intent;
-      },
-      { binary: true }
-    );
+    const arrayBuffer = await exporter.parseAsync(group, { binary: true });
+    const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
+    const url = URL.createObjectURL(blob);
+    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(url)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
+    window.location.href = intent;
   } else if (isIOS()) {
     const exporter = new USDZExporter();
     const arrayBuffer = await exporter.parseAsync(group);
