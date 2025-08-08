@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
 import { GLTFLoader } from 'GLTFLoader';
 import { TransformControls } from 'TransformControls';
+import { EffectComposer } from 'EffectComposer';
+import { RenderPass } from 'RenderPass';
+import { OutlinePass } from 'OutlinePass';
 import { ConfiguratorState } from './state.js';
 import { renderSlots, renderObjects, renderSlotsMobile } from './ui.js';
 import { openObjectModal } from './modal.js';
@@ -45,6 +48,15 @@ const transform = new TransformControls(camera, renderer.domElement);
 transform.addEventListener('dragging-changed', e => { orbit.enabled = !e.value; });
 scene.add(transform);
 
+// postprocessing for hover outline
+const composer = new EffectComposer(renderer);
+composer.setSize(viewer.clientWidth, viewer.clientHeight);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+const outlinePass = new OutlinePass(new THREE.Vector2(viewer.clientWidth, viewer.clientHeight), scene, camera);
+outlinePass.edgeStrength = 3;
+composer.addPass(outlinePass);
+
 // basic lighting so models are visible
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(ambientLight);
@@ -68,6 +80,7 @@ function isMobile(){
 
 function handleResize(){
   renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+  composer.setSize(viewer.clientWidth, viewer.clientHeight);
   camera.aspect = viewer.clientWidth / viewer.clientHeight;
   camera.updateProjectionMatrix();
   renderUI();
@@ -131,7 +144,7 @@ function hideLoading(){
 
 function animate() {
   requestAnimationFrame(animate);
-  renderer.render(scene, camera);
+  composer.render();
 }
 animate();
 
@@ -227,16 +240,10 @@ function activateSlot(slot) {
   updateCoordInputs();
 }
 
-function applyHover(mesh, hover) {
-  if (!mesh) return;
-  const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-  mats.forEach(m => {
-    if (!m || !('emissive' in m)) return;
-    if (!m.userData.origEmissive) {
-      m.userData.origEmissive = m.emissive.clone();
-    }
-    m.emissive.copy(hover ? new THREE.Color(0x4444ff) : m.userData.origEmissive);
-  });
+function setHovered(obj) {
+  if (hovered === obj) return;
+  hovered = obj;
+  outlinePass.selectedObjects = obj ? [obj] : [];
 }
 
 function handleHover(event) {
@@ -247,14 +254,7 @@ function handleHover(event) {
   const intersect = raycaster.intersectObjects(Object.values(meshes), true)[0];
   let obj = intersect ? intersect.object : null;
   while (obj && !obj.userData.slotId) obj = obj.parent;
-  if (hovered && hovered !== obj) {
-    applyHover(hovered, false);
-    hovered = null;
-  }
-  if (obj && hovered !== obj) {
-    applyHover(obj, true);
-    hovered = obj;
-  }
+  setHovered(obj);
 }
 
 function handleSceneClick(event) {
@@ -434,10 +434,7 @@ renderer.domElement.addEventListener('pointermove', e => {
 });
 
 renderer.domElement.addEventListener('pointerleave', () => {
-  if (hovered) {
-    applyHover(hovered, false);
-    hovered = null;
-  }
+  setHovered(null);
 });
 
 renderer.domElement.addEventListener('pointerup', e => {

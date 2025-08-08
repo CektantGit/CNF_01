@@ -3,6 +3,9 @@ import { OrbitControls } from 'OrbitControls';
 import { GLTFLoader } from 'GLTFLoader';
 import { GLTFExporter } from 'GLTFExporter';
 import { USDZExporter } from 'USDZExporter';
+import { EffectComposer } from 'EffectComposer';
+import { RenderPass } from 'RenderPass';
+import { OutlinePass } from 'OutlinePass';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots } from './viewer-ui.js';
 import { fetchObjectDetails } from './viewer-api.js';
@@ -28,10 +31,20 @@ const dir = new THREE.DirectionalLight(0xffffff, 0.6);
 dir.position.set(5, 10, 7);
 scene.add(dir);
 
+// postprocessing for hover outline
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+const outlinePass = new OutlinePass(new THREE.Vector2(1, 1), scene, camera);
+outlinePass.edgeStrength = 3;
+composer.addPass(outlinePass);
+
 function resize() {
   const w = container.clientWidth;
   const h = container.clientHeight;
   renderer.setSize(w, h);
+  composer.setSize(w, h);
+  outlinePass.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
@@ -40,7 +53,7 @@ resize();
 
 function animate() {
   requestAnimationFrame(animate);
-  renderer.render(scene, camera);
+  composer.render();
 }
 animate();
 
@@ -171,16 +184,10 @@ async function selectObject(slotIdx, objIdx, matIdx) {
   renderSlots(slotPanel, state, selectObject);
 }
 
-function applyHover(mesh, hover) {
-  if (!mesh) return;
-  const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-  mats.forEach((m) => {
-    if (!m || !('emissive' in m)) return;
-    if (!m.userData.origEmissive) {
-      m.userData.origEmissive = m.emissive.clone();
-    }
-    m.emissive.copy(hover ? new THREE.Color(0x4444ff) : m.userData.origEmissive);
-  });
+function setHovered(obj) {
+  if (hovered === obj) return;
+  hovered = obj;
+  outlinePass.selectedObjects = obj ? [obj] : [];
 }
 
 function handleHover(event) {
@@ -192,14 +199,7 @@ function handleHover(event) {
   const intersect = raycaster.intersectObjects(objs, true)[0];
   let obj = intersect ? intersect.object : null;
   while (obj && !obj.userData.slotIdx) obj = obj.parent;
-  if (hovered && hovered !== obj) {
-    applyHover(hovered, false);
-    hovered = null;
-  }
-  if (obj && hovered !== obj) {
-    applyHover(obj, true);
-    hovered = obj;
-  }
+  setHovered(obj);
 }
 
 function handleSceneClick(event) {
@@ -248,10 +248,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
 });
 
 renderer.domElement.addEventListener('pointerleave', () => {
-  if (hovered) {
-    applyHover(hovered, false);
-    hovered = null;
-  }
+  setHovered(null);
 });
 
 async function handleImport(file) {
