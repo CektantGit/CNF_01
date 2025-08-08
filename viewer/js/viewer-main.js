@@ -25,11 +25,10 @@ const controls = new OrbitControls(camera, renderer.domElement);
 camera.position.set(3, 3, 3);
 controls.update();
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+const ambient = new THREE.AmbientLight(0xffffff, 1);
 scene.add(ambient);
-const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-dir.position.set(5, 10, 7);
-scene.add(dir);
+const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+scene.add(hemi);
 
 // postprocessing for hover outline
 const composer = new EffectComposer(renderer);

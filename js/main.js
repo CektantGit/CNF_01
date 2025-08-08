@@ -57,12 +57,11 @@ const outlinePass = new OutlinePass(new THREE.Vector2(viewer.clientWidth, viewer
 outlinePass.edgeStrength = 3;
 composer.addPass(outlinePass);
 
-// basic lighting so models are visible
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+// soft, even lighting across the scene
+const ambientLight = new THREE.AmbientLight(0xffffff, 1);
 scene.add(ambientLight);
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-dirLight.position.set(5, 10, 7);
-scene.add(dirLight);
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+scene.add(hemiLight);
 
 const grid = new THREE.GridHelper(10, 10);
 grid.visible = false;
