@@ -116,6 +116,14 @@ async function selectObject(slotIdx, objIdx, matIdx) {
 async function handleImport(file) {
   const text = await file.text();
   const data = JSON.parse(text);
+  // remove previous meshes from scene
+  state.slots.forEach((s) => {
+    if (s.currentMesh) {
+      scene.remove(s.currentMesh);
+      s.currentMesh = null;
+    }
+  });
+
   await state.loadConfig(data, fetchObjectDetails);
   renderSlots(slotPanel, state, selectObject);
   for (let i = 0; i < state.slots.length; i++) {
