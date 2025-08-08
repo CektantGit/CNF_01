@@ -71,7 +71,7 @@ const outlinePass = new OutlinePass(
 );
 outlinePass.edgeStrength = 3;
 outlinePass.visibleEdgeColor.set(0x808080);
-outlinePass.hiddenEdgeColor.set(0x808080);
+outlinePass.hiddenEdgeColor.set(0xffffff);
 composer.addPass(outlinePass);
 
 // soft, even lighting across the scene

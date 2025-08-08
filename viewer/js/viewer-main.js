@@ -49,7 +49,7 @@ composer.addPass(renderPass);
 const outlinePass = new OutlinePass(new THREE.Vector2(1, 1), scene, camera);
 outlinePass.edgeStrength = 3;
 outlinePass.visibleEdgeColor.set(0x808080);
-outlinePass.hiddenEdgeColor.set(0x808080);
+outlinePass.hiddenEdgeColor.set(0xffffff);
 composer.addPass(outlinePass);
 
 function resize() {
