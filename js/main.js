@@ -14,6 +14,7 @@ const addSlotBtn = document.getElementById('addSlotBtn');
 const addObjectBtn = document.getElementById('addObjectBtn');
 const inheritBtn = document.getElementById('inheritBtn');
 const objectsContainer = document.getElementById('objects');
+const canBeEmptyChk = document.getElementById('canBeEmpty');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
@@ -102,7 +103,7 @@ function loadSlot(slot, attach = false) {
     scene.remove(existing);
     delete meshes[slot.id];
   }
-  if (slot.selectedObjectIndex === -1) return;
+  if (slot.hidden || slot.selectedObjectIndex === -1) return;
   const obj = slot.objects[slot.selectedObjectIndex];
   loadObject(slot, obj, attach && transformMode !== null);
 }
@@ -118,7 +119,8 @@ function activateSlot(slot) {
   if (transformMode === null) {
     transform.detach();
   }
-  if (!slot || slot.selectedObjectIndex === -1) {
+  if (!slot || slot.selectedObjectIndex === -1 || slot.hidden) {
+    transform.detach();
     return;
   }
   const mesh = meshes[slot.id];
@@ -136,6 +138,7 @@ const slotCallbacks = {
     state.currentSlotIndex = index;
     renderSlots(state, slotListEl, slotCallbacks);
     renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+    canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
     activateSlot(state.currentSlot);
   },
   onDelete(id) {
@@ -148,7 +151,22 @@ const slotCallbacks = {
     state.removeSlot(id);
     renderSlots(state, slotListEl, slotCallbacks);
     renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+    canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
     activateSlot(state.currentSlot);
+  },
+  onToggleHide(slot) {
+    slot.hidden = !slot.hidden;
+    const mesh = meshes[slot.id];
+    if (slot.hidden) {
+      if (mesh) {
+        if (transform.object === mesh) transform.detach();
+        scene.remove(mesh);
+        delete meshes[slot.id];
+      }
+    } else {
+      loadSlot(slot, slot === state.currentSlot);
+    }
+    renderSlots(state, slotListEl, slotCallbacks);
   }
 };
 
@@ -182,6 +200,7 @@ addSlotBtn.addEventListener('click', () => {
   state.addSlot();
   renderSlots(state, slotListEl, slotCallbacks);
   renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+  canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
 });
 
 addObjectBtn.addEventListener('click', () => {
@@ -255,6 +274,11 @@ inheritBtn.addEventListener('click', () => {
   if (slot) loadSlot(slot, true);
 });
 
+canBeEmptyChk.addEventListener('change', () => {
+  const slot = state.currentSlot;
+  if (slot) slot.canBeEmpty = canBeEmptyChk.checked;
+});
+
 async function handleImport(data) {
   Object.values(meshes).forEach(m => {
     if (transform.object === m) transform.detach();
@@ -266,6 +290,7 @@ async function handleImport(data) {
 
   renderSlots(state, slotListEl, slotCallbacks);
   renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+  canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
 
   state.slots.forEach((slot, idx) => {
     loadSlot(slot, idx === state.currentSlotIndex);
@@ -276,4 +301,5 @@ async function handleImport(data) {
 state.addSlot();
 renderSlots(state, slotListEl, slotCallbacks);
 renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
+canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
 activateSlot(state.currentSlot);

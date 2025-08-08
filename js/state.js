@@ -14,19 +14,23 @@ export class ConfiguratorState {
       id: crypto.randomUUID(),
       name,
       objects: [],
-      selectedObjectIndex: -1
+      selectedObjectIndex: -1,
+      canBeEmpty: false,
+      hidden: false
     };
     this.slots.push(slot);
     this.currentSlotIndex = this.slots.length - 1;
     return slot;
   }
 
-  addSlotFromData(id, name, objects = []) {
+  addSlotFromData(id, name, objects = [], canBeEmpty = false) {
     const slot = {
       id,
       name,
       objects,
-      selectedObjectIndex: objects.length ? 0 : -1
+      selectedObjectIndex: objects.length ? 0 : -1,
+      canBeEmpty,
+      hidden: false
     };
     this.slots.push(slot);
     if (this.currentSlotIndex === -1) {
@@ -96,7 +100,7 @@ export class ConfiguratorState {
           }
         });
       }
-      this.addSlotFromData(id, slotData.name, objects);
+      this.addSlotFromData(id, slotData.name, objects, slotData.canBeEmpty);
     }
   }
 
@@ -105,6 +109,7 @@ export class ConfiguratorState {
     this.slots.forEach(slot => {
       slotsOut[slot.id] = {
         name: slot.name,
+        canBeEmpty: slot.canBeEmpty,
         objects: slot.objects.map(o => ({
           uuid: o.uuid,
           position: o.transform.position,

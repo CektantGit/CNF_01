@@ -1,4 +1,4 @@
-export function renderSlots(state, container, { onSelect, onDelete }) {
+export function renderSlots(state, container, { onSelect, onDelete, onToggleHide }) {
   container.innerHTML = '';
   state.slots.forEach((slot, index) => {
     const li = document.createElement('li');
@@ -6,14 +6,14 @@ export function renderSlots(state, container, { onSelect, onDelete }) {
     li.addEventListener('click', () => {
       if (state.currentSlotIndex === index) {
         const newName = prompt('Rename slot', slot.name);
-        if (newName) {
-          slot.name = newName;
-          renderSlots(state, container, { onSelect, onDelete });
+          if (newName) {
+            slot.name = newName;
+            renderSlots(state, container, { onSelect, onDelete, onToggleHide });
+          }
+        } else {
+          onSelect(index);
         }
-      } else {
-        onSelect(index);
-      }
-    });
+      });
     const nameSpan = document.createElement('span');
     nameSpan.textContent = slot.name;
     const delBtn = document.createElement('button');
@@ -22,8 +22,16 @@ export function renderSlots(state, container, { onSelect, onDelete }) {
       e.stopPropagation();
       onDelete(slot.id);
     });
+    const hideBtn = document.createElement('button');
+    hideBtn.textContent = 'Hide';
+    hideBtn.className = 'hide-btn' + (slot.hidden ? ' active' : '');
+    hideBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      onToggleHide(slot);
+    });
     li.appendChild(nameSpan);
     li.appendChild(delBtn);
+    li.appendChild(hideBtn);
     container.appendChild(li);
   });
 }
