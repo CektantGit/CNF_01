@@ -200,15 +200,16 @@ arBtn.addEventListener('click', async () => {
   } else if (isIOS()) {
     const exporter = new USDZExporter();
     const arrayBuffer = await exporter.parseAsync(exportScene);
-    const base64 = arrayBufferToBase64(arrayBuffer);
-    const dataUrl = `data:model/vnd.usdz+zip;base64,${base64}`;
+    const blob = new Blob([arrayBuffer], { type: 'model/vnd.usdz+zip' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.rel = 'ar';
-    a.href = dataUrl;
+    a.href = url;
     a.setAttribute('download', 'scene.usdz');
     document.body.appendChild(a);
     a.click();
     a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   } else {
     alert('AR not supported');
   }
