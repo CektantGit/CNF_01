@@ -47,6 +47,31 @@ animate();
 const state = new ViewerState();
 const loader = new GLTFLoader();
 
+function prepareExportScene(src) {
+  const expScene = new THREE.Scene();
+  src.traverse((child) => {
+    if (child.isMesh) {
+      const material = Array.isArray(child.material)
+        ? child.material.map((m) => {
+            const mat = m.clone();
+            mat.side = THREE.FrontSide;
+            return mat;
+          })
+        : (() => {
+            const mat = child.material.clone();
+            mat.side = THREE.FrontSide;
+            return mat;
+          })();
+      const mesh = new THREE.Mesh(child.geometry.clone(), material);
+      mesh.position.copy(child.position);
+      mesh.quaternion.copy(child.quaternion);
+      mesh.scale.copy(child.scale);
+      expScene.add(mesh);
+    }
+  });
+  return expScene;
+}
+
 function showLoading(r) {
   const overlay = document.getElementById('loadingOverlay');
   const bar = document.getElementById('progressBar');
@@ -162,9 +187,11 @@ arBtn.addEventListener('click', async () => {
   box.getCenter(center);
   group.children.forEach((c) => c.position.sub(center));
 
+  const exportScene = prepareExportScene(group);
+
   if (isAndroid()) {
     const exporter = new GLTFExporter();
-    const arrayBuffer = await exporter.parseAsync(group, { binary: true });
+    const arrayBuffer = await exporter.parseAsync(exportScene, { binary: true });
     const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
     const url = URL.createObjectURL(blob);
     const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(url)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
@@ -176,7 +203,7 @@ arBtn.addEventListener('click', async () => {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   } else if (isIOS()) {
     const exporter = new USDZExporter();
-    const arrayBuffer = await exporter.parseAsync(group);
+    const arrayBuffer = await exporter.parseAsync(exportScene);
     const blob = new Blob([arrayBuffer], { type: 'model/vnd.usdz+zip' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
