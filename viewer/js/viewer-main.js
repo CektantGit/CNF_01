@@ -144,34 +144,49 @@ importInput.addEventListener('change', (e) => {
 arBtn.addEventListener('click', async () => {
   const meshes = state.slots.map((s) => s.currentMesh).filter(Boolean);
   if (!meshes.length) return;
+
   const group = new THREE.Group();
-  meshes.forEach((m) => group.add(m.clone()));
-  group.traverse(obj=>obj.updateMatrixWorld(true));
+  meshes.forEach((m) => group.add(m.clone(true)));
+  group.traverse((obj) => {
+    if (obj.isMesh) {
+      obj.geometry = obj.geometry.clone();
+      obj.material = obj.material.clone();
+      obj.userData = {};
+    }
+    obj.updateMatrixWorld(true);
+  });
+
   // center group so exported model is around origin
   const box = new THREE.Box3().setFromObject(group);
   const center = new THREE.Vector3();
   box.getCenter(center);
   group.children.forEach((c) => c.position.sub(center));
+
   if (isAndroid()) {
     const exporter = new GLTFExporter();
     const arrayBuffer = await exporter.parseAsync(group, { binary: true });
-    const base64 = arrayBufferToBase64(arrayBuffer);
-    const dataUrl = `data:model/gltf-binary;base64,${base64}`;
-    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(dataUrl)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
-    window.location.href = intent;
+    const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
+    const url = URL.createObjectURL(blob);
+    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(url)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
+    const a = document.createElement('a');
+    a.href = intent;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   } else if (isIOS()) {
     const exporter = new USDZExporter();
     const arrayBuffer = await exporter.parseAsync(group);
-    const blob = new Blob([arrayBuffer], {
-      type: 'model/vnd.usdz+zip',
-    });
+    const blob = new Blob([arrayBuffer], { type: 'model/vnd.usdz+zip' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.rel = 'ar';
     a.href = url;
+    a.setAttribute('download', 'scene.usdz');
     document.body.appendChild(a);
     a.click();
     a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   } else {
     alert('AR not supported');
   }
@@ -182,14 +197,4 @@ function isAndroid() {
 }
 function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent);
-}
-
-function arrayBufferToBase64(buffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
 }
