@@ -22,6 +22,8 @@ const modalEl = document.getElementById('objectModal');
 const moveBtn = document.getElementById('moveBtn');
 const rotateBtn = document.getElementById('rotateBtn');
 const noneBtn = document.getElementById('noneBtn');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const progressBar = document.getElementById('progressBar');
 
 // THREE.js setup
 const viewer = document.getElementById('viewer');
@@ -54,6 +56,19 @@ window.addEventListener('resize', () => {
 const meshes = {};
 let transformMode = null;
 
+function showLoading(){
+  loadingOverlay.style.display='flex';
+  progressBar.style.width='0%';
+}
+
+function updateLoading(p){
+  progressBar.style.width = `${Math.round(p*100)}%`;
+}
+
+function hideLoading(){
+  loadingOverlay.style.display='none';
+}
+
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
@@ -79,21 +94,33 @@ function loadObject(slot, obj, attach = false) {
   if (!url) return;
   const loadId = crypto.randomUUID();
   slot._loadId = loadId;
-  loader.load(url, gltf => {
-    if (slot._loadId !== loadId) return; // stale load
-    const mesh = gltf.scene;
-    mesh.position.fromArray(obj.transform.position);
-    mesh.rotation.set(
-      THREE.MathUtils.degToRad(obj.transform.rotation[0]),
-      THREE.MathUtils.degToRad(obj.transform.rotation[1]),
-      THREE.MathUtils.degToRad(obj.transform.rotation[2])
-    );
-    mesh.scale.fromArray(obj.transform.scale);
-    mesh.userData.stateObj = obj;
-    scene.add(mesh);
-    meshes[slot.id] = mesh;
-    if (attach && transformMode !== null) attachTransformControls(mesh, obj);
-  });
+  showLoading();
+  loader.load(
+    url,
+    gltf => {
+      if (slot._loadId !== loadId) { hideLoading(); return; }
+      const mesh = gltf.scene;
+      mesh.position.fromArray(obj.transform.position);
+      mesh.rotation.set(
+        THREE.MathUtils.degToRad(obj.transform.rotation[0]),
+        THREE.MathUtils.degToRad(obj.transform.rotation[1]),
+        THREE.MathUtils.degToRad(obj.transform.rotation[2])
+      );
+      mesh.scale.fromArray(obj.transform.scale);
+      mesh.userData.stateObj = obj;
+      scene.add(mesh);
+      meshes[slot.id] = mesh;
+      if (attach && transformMode !== null) attachTransformControls(mesh, obj);
+      hideLoading();
+    },
+    xhr => {
+      if (xhr.total) updateLoading(xhr.loaded / xhr.total);
+    },
+    err => {
+      console.error('Load error', err);
+      hideLoading();
+    }
+  );
 }
 
 function loadSlot(slot, attach = false) {
