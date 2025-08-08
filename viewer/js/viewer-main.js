@@ -3,7 +3,6 @@ import { OrbitControls } from 'OrbitControls';
 import { GLTFLoader } from 'GLTFLoader';
 import { GLTFExporter } from 'GLTFExporter';
 import { USDZExporter } from 'USDZExporter';
-import * as BufferGeometryUtils from 'BufferGeometryUtils';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots } from './viewer-ui.js';
 import { fetchObjectDetails } from './viewer-api.js';
@@ -59,37 +58,40 @@ function arrayBufferToBase64(buffer) {
 }
 
 function buildExportScene(srcScene) {
-  const geometries = [];
-  const materials = [];
+  const group = new THREE.Group();
 
   srcScene.traverse((child) => {
     if (child.isMesh && child.visible) {
-      const mat = Array.isArray(child.material)
-        ? child.material[0].clone()
-        : child.material.clone();
-      mat.side = THREE.FrontSide;
+      const clonedMat = Array.isArray(child.material)
+        ? child.material.map((m) => {
+            const cm = m.clone();
+            cm.side = THREE.FrontSide;
+            return cm;
+          })
+        : (() => {
+            const cm = child.material.clone();
+            cm.side = THREE.FrontSide;
+            return cm;
+          })();
 
-      const geom = child.geometry.clone();
+      const clone = child.clone();
+      clone.material = clonedMat;
+      clone.geometry = child.geometry.clone();
       child.updateWorldMatrix(true, false);
-      geom.applyMatrix4(child.matrixWorld);
-
-      geometries.push(geom);
-      materials.push(mat);
+      clone.applyMatrix4(child.matrixWorld);
+      group.add(clone);
     }
   });
 
-  if (!geometries.length) return new THREE.Scene();
+  if (!group.children.length) return new THREE.Scene();
 
-  const merged = BufferGeometryUtils.mergeGeometries(geometries, true);
-  merged.computeBoundingBox();
-  const center = new THREE.Vector3();
-  merged.boundingBox.getCenter(center);
-  merged.translate(-center.x, -center.y, -center.z);
+  const box = new THREE.Box3().setFromObject(group);
+  const center = box.getCenter(new THREE.Vector3());
+  group.position.sub(center);
 
-  const mesh = new THREE.Mesh(merged, materials);
-  const expScene = new THREE.Scene();
-  expScene.add(mesh);
-  return expScene;
+  const exportScene = new THREE.Scene();
+  exportScene.add(group);
+  return exportScene;
 }
 
 function showLoading(r) {
