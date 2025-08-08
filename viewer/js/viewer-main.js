@@ -57,7 +57,7 @@ composer.addPass(renderPass);
 const outlinePass = new OutlinePass(new THREE.Vector2(1, 1), scene, camera);
 outlinePass.edgeStrength = 3;
 outlinePass.visibleEdgeColor.set(0x008efa);
-outlinePass.hiddenEdgeColor.set(0xffffff);
+outlinePass.hiddenEdgeColor.set(0x000000);
 composer.addPass(outlinePass);
 const outputPass = new OutputPass();
 composer.addPass(outputPass);
@@ -200,12 +200,8 @@ async function selectObject(slotIdx, objIdx, matIdx) {
     ...obj.transform.rotation.map((r) => THREE.MathUtils.degToRad(r))
   );
   inst.scale.fromArray(obj.transform.scale);
-  inst.traverse((c) => {
-    if (c.isMesh) {
-      c.userData.slotIdx = slotIdx;
-      c.userData.objIdx = objIdx;
-    }
-  });
+  inst.userData.slotIdx = slotIdx;
+  inst.userData.objIdx = objIdx;
   slot.currentMesh = inst;
   scene.add(inst);
   renderSlots(slotPanel, state, selectObject);
