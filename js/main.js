@@ -22,6 +22,7 @@ const modalEl = document.getElementById('objectModal');
 const moveBtn = document.getElementById('moveBtn');
 const rotateBtn = document.getElementById('rotateBtn');
 const noneBtn = document.getElementById('noneBtn');
+const gridBtn = document.getElementById('gridBtn');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const progressBar = document.getElementById('progressBar');
 
@@ -46,6 +47,10 @@ scene.add(ambientLight);
 const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
 dirLight.position.set(5, 10, 7);
 scene.add(dirLight);
+
+const grid = new THREE.GridHelper(10, 10);
+grid.visible = false;
+scene.add(grid);
 
 window.addEventListener('resize', () => {
   renderer.setSize(viewer.clientWidth, viewer.clientHeight);
@@ -293,6 +298,11 @@ noneBtn.addEventListener('click', () => {
   transformMode = null;
   transform.enabled = false;
   transform.detach();
+});
+
+gridBtn.addEventListener('click', () => {
+  grid.visible = !grid.visible;
+  gridBtn.classList.toggle('active', grid.visible);
 });
 
 inheritBtn.addEventListener('click', () => {

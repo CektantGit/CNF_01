@@ -25,6 +25,7 @@ export function renderSlots(state, container, { onSelect, onDelete, onToggleHide
     });
     const delBtn = document.createElement('button');
     delBtn.textContent = 'X';
+    delBtn.className = 'action-btn';
     delBtn.addEventListener('click', e => {
       e.stopPropagation();
       onDelete(slot.id);
@@ -50,6 +51,7 @@ export function renderObjects(slot, container, { onSelectObject, onSelectMateria
     title.addEventListener('click', () => onSelectObject(objIndex));
     const delBtn = document.createElement('button');
     delBtn.textContent = 'Delete';
+    delBtn.className = 'action-btn';
     delBtn.addEventListener('click', () => onDelete(objIndex));
     const matList = document.createElement('div');
     matList.className = 'material-list';

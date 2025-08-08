@@ -19,7 +19,7 @@
 <body>
   <div id="container">
     <div id="slotsPanel">
-      <button id="addSlotBtn">Add slot</button>
+      <button id="addSlotBtn" class="action-btn">Add slot</button>
       <ul id="slots"></ul>
     </div>
     <div id="viewer">
@@ -33,11 +33,12 @@
         <button id="importBtn">Import JSON</button>
         <input type="file" id="importInput" accept="application/json" style="display:none" />
       </div>
+      <button id="gridBtn" class="action-btn">Grid</button>
     </div>
     <div id="objectsPanel">
       <div id="objectActions">
-        <button id="addObjectBtn">Add object</button>
-        <button id="inheritBtn">Inherit first</button>
+        <button id="addObjectBtn" class="action-btn">Add object</button>
+        <button id="inheritBtn" class="action-btn">Inherit first</button>
       </div>
       <label id="canEmptyRow"><input type="checkbox" id="canBeEmpty"> Can be empty</label>
       <div id="objects"></div>

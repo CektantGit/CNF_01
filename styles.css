@@ -42,10 +42,6 @@ canvas{display:block;}
 #objectModal .modal-card .info .counts .count{display:flex;align-items:center;}
 #objectModal .pagination{display:flex;justify-content:center;margin-top:10px;}
 #closeModal{display:block;margin:10px auto 0;}
-.slot{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;cursor:pointer;padding:2px 4px;border-radius:4px;}
-.slot.selected{background:var(--color-Gray-20);}
-.slot-actions{display:flex;gap:5px;}
-.slot-actions button{margin-left:0;}
 .obj-card{border:1px solid var(--color-Borders-Main);padding:5px;margin-bottom:5px;border-radius:4px;}
 .obj-card.selected{background:var(--color-Gray-20);}
 .material-list{display:flex;flex-wrap:wrap;}
@@ -55,9 +51,15 @@ canvas{display:block;}
 button{background:var(--color-Gray-10);border:1px solid var(--color-Borders-Main);border-radius:4px;padding:4px 8px;color:var(--color-Text-Main);transition:background .2s,color .2s;}
 button:hover{background:var(--color-Brand-Main);color:var(--color-White);}
 button.active{background:var(--color-Brand-Main);color:var(--color-White);}
-#addSlotBtn,#addObjectBtn,#inheritBtn{background:var(--color-White);}
+#slots{list-style:none;padding:0;margin:0;}
+.slot{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;cursor:pointer;padding:2px 4px;border-radius:4px;width:100%;}
+.slot.selected{background:var(--color-Gray-20);}
+.slot-actions{display:flex;gap:5px;}
+.slot-actions button{margin-left:0;}
+.action-btn{background:var(--color-White);}
+.action-btn:hover,.action-btn:active{background:var(--color-Brand-Main);color:var(--color-White);}
 #addSlotBtn{display:block;width:100%;margin-bottom:10px;}
-#addSlotBtn:hover,#addSlotBtn:active,#addObjectBtn:hover,#addObjectBtn:active,#inheritBtn:hover,#inheritBtn:active{background:var(--color-Brand-Main);color:var(--color-White);}
+#gridBtn{position:absolute;bottom:10px;right:10px;}
 .hide-btn.active{background:var(--color-Gray-70);color:var(--color-White);}
 #loadingOverlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:20;}
 #loadingOverlay .loading-box{text-align:center;color:var(--color-White);}
