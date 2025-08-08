@@ -1,12 +1,14 @@
 import { fetchObjects } from './api.js';
 
+let lastPage = 1;
+
 export function openObjectModal(modalEl, { onSelect }) {
   const listEl = modalEl.querySelector('#modalList');
   const pageInfo = modalEl.querySelector('#pageInfo');
   const prevBtn = modalEl.querySelector('#prevPage');
   const nextBtn = modalEl.querySelector('#nextPage');
   const closeBtn = modalEl.querySelector('#closeModal');
-  let currentPage = 1;
+  let currentPage = lastPage;
   let totalPages = 1;
 
   async function load(page) {
@@ -28,6 +30,7 @@ export function openObjectModal(modalEl, { onSelect }) {
       listEl.appendChild(item);
     });
     currentPage = page;
+    lastPage = currentPage;
     totalPages = data.pages_count || 1;
     pageInfo.textContent = `${currentPage}/${totalPages}`;
     prevBtn.disabled = currentPage <= 1;
@@ -53,5 +56,5 @@ export function openObjectModal(modalEl, { onSelect }) {
   closeBtn.addEventListener('click', close);
 
   modalEl.style.display = 'block';
-  load(1);
+  load(currentPage);
 }
