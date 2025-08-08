@@ -60,6 +60,7 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let pointerDown = null;
 let pointerMoved = false;
+let hovered = null;
 
 function isMobile(){
   return window.innerWidth <= 768;
@@ -226,6 +227,36 @@ function activateSlot(slot) {
   updateCoordInputs();
 }
 
+function applyHover(mesh, hover) {
+  if (!mesh) return;
+  const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  mats.forEach(m => {
+    if (!m || !('emissive' in m)) return;
+    if (!m.userData.origEmissive) {
+      m.userData.origEmissive = m.emissive.clone();
+    }
+    m.emissive.copy(hover ? new THREE.Color(0x4444ff) : m.userData.origEmissive);
+  });
+}
+
+function handleHover(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const intersect = raycaster.intersectObjects(Object.values(meshes), true)[0];
+  let obj = intersect ? intersect.object : null;
+  while (obj && !obj.userData.slotId) obj = obj.parent;
+  if (hovered && hovered !== obj) {
+    applyHover(hovered, false);
+    hovered = null;
+  }
+  if (obj && hovered !== obj) {
+    applyHover(obj, true);
+    hovered = obj;
+  }
+}
+
 function handleSceneClick(event) {
   const rect = renderer.domElement.getBoundingClientRect();
   pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -251,6 +282,8 @@ const slotCallbacks = {
     renderUI();
     canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
     activateSlot(state.currentSlot);
+    const el = slotListEl.children[index];
+    if (el) el.scrollIntoView({ block: 'nearest' });
   },
   onDelete(id) {
     const mesh = meshes[id];
@@ -393,15 +426,24 @@ renderer.domElement.addEventListener('pointerdown', e => {
 });
 
 renderer.domElement.addEventListener('pointermove', e => {
+  handleHover(e);
   if (!pointerDown) return;
   if (Math.abs(e.clientX - pointerDown.x) > 5 || Math.abs(e.clientY - pointerDown.y) > 5) {
     pointerMoved = true;
   }
 });
 
+renderer.domElement.addEventListener('pointerleave', () => {
+  if (hovered) {
+    applyHover(hovered, false);
+    hovered = null;
+  }
+});
+
 renderer.domElement.addEventListener('pointerup', e => {
   if (e.button !== 0 || !pointerDown) return;
   if (!pointerMoved) handleSceneClick(e);
+  handleHover(e);
   pointerDown = null;
 });
 

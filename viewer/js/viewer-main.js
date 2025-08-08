@@ -46,6 +46,11 @@ animate();
 
 const state = new ViewerState();
 const loader = new GLTFLoader();
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let pointerDown = null;
+let pointerMoved = false;
+let hovered = null;
 
 function arrayBufferToBase64(buffer) {
   let binary = '';
@@ -155,10 +160,99 @@ async function selectObject(slotIdx, objIdx, matIdx) {
     ...obj.transform.rotation.map((r) => THREE.MathUtils.degToRad(r))
   );
   inst.scale.fromArray(obj.transform.scale);
+  inst.traverse((c) => {
+    if (c.isMesh) {
+      c.userData.slotIdx = slotIdx;
+      c.userData.objIdx = objIdx;
+    }
+  });
   slot.currentMesh = inst;
   scene.add(inst);
   renderSlots(slotPanel, state, selectObject);
 }
+
+function applyHover(mesh, hover) {
+  if (!mesh) return;
+  const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  mats.forEach((m) => {
+    if (!m || !('emissive' in m)) return;
+    if (!m.userData.origEmissive) {
+      m.userData.origEmissive = m.emissive.clone();
+    }
+    m.emissive.copy(hover ? new THREE.Color(0x4444ff) : m.userData.origEmissive);
+  });
+}
+
+function handleHover(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const objs = state.slots.map((s) => s.currentMesh).filter(Boolean);
+  const intersect = raycaster.intersectObjects(objs, true)[0];
+  let obj = intersect ? intersect.object : null;
+  while (obj && !obj.userData.slotIdx) obj = obj.parent;
+  if (hovered && hovered !== obj) {
+    applyHover(hovered, false);
+    hovered = null;
+  }
+  if (obj && hovered !== obj) {
+    applyHover(obj, true);
+    hovered = obj;
+  }
+}
+
+function handleSceneClick(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const objs = state.slots.map((s) => s.currentMesh).filter(Boolean);
+  const intersect = raycaster.intersectObjects(objs, true)[0];
+  if (!intersect) return;
+  let obj = intersect.object;
+  while (obj && !obj.userData.slotIdx) obj = obj.parent;
+  if (!obj) return;
+  const slotIdx = obj.userData.slotIdx;
+  const objIdx = obj.userData.objIdx;
+  const slot = state.slots[slotIdx];
+  slot.selectedIndex = objIdx;
+  slot.open = true;
+  renderSlots(slotPanel, state, selectObject);
+  const slotEl = slotPanel.children[slotIdx];
+  if (slotEl) {
+    slotEl.open = true;
+    slotEl.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  pointerDown = { x: e.clientX, y: e.clientY };
+  pointerMoved = false;
+});
+
+renderer.domElement.addEventListener('pointermove', (e) => {
+  handleHover(e);
+  if (!pointerDown) return;
+  if (Math.abs(e.clientX - pointerDown.x) > 5 || Math.abs(e.clientY - pointerDown.y) > 5) {
+    pointerMoved = true;
+  }
+});
+
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (e.button !== 0) return;
+  if (!pointerMoved) handleSceneClick(e);
+  handleHover(e);
+  pointerDown = null;
+});
+
+renderer.domElement.addEventListener('pointerleave', () => {
+  if (hovered) {
+    applyHover(hovered, false);
+    hovered = null;
+  }
+});
 
 async function handleImport(file) {
   const text = await file.text();
