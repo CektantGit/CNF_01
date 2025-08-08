@@ -147,9 +147,9 @@ arBtn.addEventListener('click', async () => {
   if (isAndroid()) {
     const exporter = new GLTFExporter();
     const arrayBuffer = await exporter.parseAsync(group, { binary: true });
-    const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
-    const url = URL.createObjectURL(blob);
-    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(url)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
+    const base64 = arrayBufferToBase64(arrayBuffer);
+    const dataUrl = `data:model/gltf-binary;base64,${base64}`;
+    const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(dataUrl)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
     window.location.href = intent;
   } else if (isIOS()) {
     const exporter = new USDZExporter();
@@ -174,4 +174,14 @@ function isAndroid() {
 }
 function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }

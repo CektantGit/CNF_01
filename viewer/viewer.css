@@ -36,7 +36,7 @@ html,body {
 @media(max-width:768px){
   #viewerWrapper {flex-direction:column;}
   #viewerCanvas {height:66.666%;flex:none;}
-  #slotPanel {height:33.333%;width:100%;}
+  #slotPanel {height:33.333%;width:100%;flex:none;}
 }
 
 canvas {display:block;}
