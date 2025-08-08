@@ -31,6 +31,13 @@ const transform = new TransformControls(camera, renderer.domElement);
 transform.addEventListener('dragging-changed', e => { orbit.enabled = !e.value; });
 scene.add(transform);
 
+// basic lighting so models are visible
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+dirLight.position.set(5, 10, 7);
+scene.add(dirLight);
+
 window.addEventListener('resize', () => {
   renderer.setSize(viewer.clientWidth, viewer.clientHeight);
   camera.aspect = viewer.clientWidth / viewer.clientHeight;
@@ -38,6 +45,7 @@ window.addEventListener('resize', () => {
 });
 
 const meshes = {};
+let transformMode = null;
 
 function animate() {
   requestAnimationFrame(animate);
@@ -45,25 +53,27 @@ function animate() {
 }
 animate();
 
-function updateScene() {
-  Object.keys(meshes).forEach(id => {
-    scene.remove(meshes[id]);
-    if (transform.object === meshes[id]) transform.detach();
-    delete meshes[id];
-  });
-  state.slots.forEach(slot => {
-    if (slot.selectedObjectIndex !== -1) {
-      const obj = slot.objects[slot.selectedObjectIndex];
-      loadObject(slot, obj);
-    }
-  });
-}
+// track transform changes for the currently attached object
+transform.addEventListener('objectChange', () => {
+  const obj = transform.object?.userData?.stateObj;
+  if (!obj) return;
+  obj.transform.position = [transform.object.position.x, transform.object.position.y, transform.object.position.z];
+  obj.transform.rotation = [
+    THREE.MathUtils.radToDeg(transform.object.rotation.x),
+    THREE.MathUtils.radToDeg(transform.object.rotation.y),
+    THREE.MathUtils.radToDeg(transform.object.rotation.z)
+  ];
+  obj.transform.scale = [transform.object.scale.x, transform.object.scale.y, transform.object.scale.z];
+});
 
-function loadObject(slot, obj) {
+function loadObject(slot, obj, attach = false) {
   const mat = obj.materials[obj.selectedMaterial];
   const url = mat?.native?.glbUrl;
   if (!url) return;
+  const loadId = crypto.randomUUID();
+  slot._loadId = loadId;
   loader.load(url, gltf => {
+    if (slot._loadId !== loadId) return; // stale load
     const mesh = gltf.scene;
     mesh.position.fromArray(obj.transform.position);
     mesh.rotation.set(
@@ -72,24 +82,43 @@ function loadObject(slot, obj) {
       THREE.MathUtils.degToRad(obj.transform.rotation[2])
     );
     mesh.scale.fromArray(obj.transform.scale);
+    mesh.userData.stateObj = obj;
     scene.add(mesh);
     meshes[slot.id] = mesh;
-    attachTransform(mesh, obj);
+    if (attach) attachTransformControls(mesh, obj);
   });
 }
 
-function attachTransform(mesh, obj) {
+function loadSlot(slot, attach = false) {
+  const existing = meshes[slot.id];
+  if (existing) {
+    if (transform.object === existing) transform.detach();
+    scene.remove(existing);
+    delete meshes[slot.id];
+  }
+  if (slot.selectedObjectIndex === -1) return;
+  const obj = slot.objects[slot.selectedObjectIndex];
+  loadObject(slot, obj, attach);
+}
+
+function attachTransformControls(mesh, obj) {
+  mesh.userData.stateObj = obj;
   transform.attach(mesh);
-  transform.enabled = transform.mode !== undefined && transform.mode !== '';
-  transform.addEventListener('objectChange', () => {
-    obj.transform.position = [mesh.position.x, mesh.position.y, mesh.position.z];
-    obj.transform.rotation = [
-      THREE.MathUtils.radToDeg(mesh.rotation.x),
-      THREE.MathUtils.radToDeg(mesh.rotation.y),
-      THREE.MathUtils.radToDeg(mesh.rotation.z)
-    ];
-    obj.transform.scale = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
-  });
+  transform.enabled = transformMode !== null;
+}
+
+function activateSlot(slot) {
+  if (!slot || slot.selectedObjectIndex === -1) {
+    transform.detach();
+    return;
+  }
+  const mesh = meshes[slot.id];
+  if (mesh) {
+    transform.attach(mesh);
+    transform.enabled = transformMode !== null;
+  } else {
+    loadSlot(slot, true);
+  }
 }
 
 // UI callbacks
@@ -98,28 +127,35 @@ const slotCallbacks = {
     state.currentSlotIndex = index;
     renderSlots(state, slotListEl, slotCallbacks);
     renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
-    updateScene();
+    activateSlot(state.currentSlot);
   },
   onDelete(id) {
+    const mesh = meshes[id];
+    if (mesh) {
+      if (transform.object === mesh) transform.detach();
+      scene.remove(mesh);
+      delete meshes[id];
+    }
     state.removeSlot(id);
     renderSlots(state, slotListEl, slotCallbacks);
     renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
-    updateScene();
+    activateSlot(state.currentSlot);
   }
 };
 
 const objectCallbacks = {
   onSelectObject(index) {
-    state.currentSlot.selectedObjectIndex = index;
-    renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
-    updateScene();
+    const slot = state.currentSlot;
+    slot.selectedObjectIndex = index;
+    renderObjects(slot, objectsContainer, objectCallbacks);
+    loadSlot(slot, true);
   },
   onSelectMaterial(objIndex, matIndex) {
     const slot = state.currentSlot;
     const obj = slot.objects[objIndex];
     obj.selectedMaterial = matIndex;
     if (slot.selectedObjectIndex === objIndex) {
-      loadObject(slot, obj);
+      loadSlot(slot, true);
     }
   },
   onDelete(objIndex) {
@@ -129,7 +165,7 @@ const objectCallbacks = {
       slot.selectedObjectIndex = slot.objects.length - 1;
     }
     renderObjects(slot, objectsContainer, objectCallbacks);
-    updateScene();
+    loadSlot(slot, true);
   }
 };
 
@@ -145,7 +181,7 @@ addObjectBtn.addEventListener('click', () => {
     onSelect(objData) {
       state.addObjectToCurrent(objData);
       renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
-      updateScene();
+      loadSlot(state.currentSlot, true);
     }
   });
 });
@@ -160,7 +196,6 @@ exportBtn.addEventListener('click', () => {
   URL.revokeObjectURL(a.href);
 });
 
-let transformMode = null;
 transformBtn.addEventListener('click', () => {
   if (transformMode === null) {
     transformMode = 'translate';
@@ -180,4 +215,4 @@ transformBtn.addEventListener('click', () => {
 state.addSlot();
 renderSlots(state, slotListEl, slotCallbacks);
 renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
-updateScene();
+activateSlot(state.currentSlot);
