@@ -3,7 +3,7 @@ import { OrbitControls } from 'OrbitControls';
 import { GLTFLoader } from 'GLTFLoader';
 import { GLTFExporter } from 'GLTFExporter';
 import { USDZExporter } from 'USDZExporter';
-import { mergeBufferGeometries } from 'BufferGeometryUtils';
+import * as BufferGeometryUtils from 'BufferGeometryUtils';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots } from './viewer-ui.js';
 import { fetchObjectDetails } from './viewer-api.js';
@@ -80,7 +80,7 @@ function buildExportScene(srcScene) {
 
   if (!geometries.length) return new THREE.Scene();
 
-  const merged = mergeBufferGeometries(geometries, true);
+  const merged = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
   merged.computeBoundingBox();
   const center = new THREE.Vector3();
   merged.boundingBox.getCenter(center);
