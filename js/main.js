@@ -343,38 +343,37 @@ importInput.addEventListener('change', async e => {
   importInput.value = '';
 });
 
-moveBtn.addEventListener('click', () => {
-  transformMode = 'translate';
-  transform.setMode('translate');
-  transform.enabled = true;
-  if (transform.object) {
-    transform.attach(transform.object);
+function updateTransformButtons() {
+  moveBtn.classList.toggle('active', transformMode === 'translate');
+  rotateBtn.classList.toggle('active', transformMode === 'rotate');
+  noneBtn.classList.toggle('active', transformMode === null);
+}
+
+function setTransformMode(mode) {
+  if (mode === transformMode) {
+    if (mode === null) return; // already none
+    transformMode = null;
   } else {
-    const mesh = meshes[state.currentSlot?.id];
+    transformMode = mode;
+  }
+
+  if (transformMode === null) {
+    transform.enabled = false;
+    transform.detach();
+  } else {
+    transform.setMode(transformMode);
+    transform.enabled = true;
+    const mesh = transform.object || meshes[state.currentSlot?.id];
     if (mesh) transform.attach(mesh);
   }
-  updateCoordInputs();
-});
 
-rotateBtn.addEventListener('click', () => {
-  transformMode = 'rotate';
-  transform.setMode('rotate');
-  transform.enabled = true;
-  if (transform.object) {
-    transform.attach(transform.object);
-  } else {
-    const mesh = meshes[state.currentSlot?.id];
-    if (mesh) transform.attach(mesh);
-  }
+  updateTransformButtons();
   updateCoordInputs();
-});
+}
 
-noneBtn.addEventListener('click', () => {
-  transformMode = null;
-  transform.enabled = false;
-  transform.detach();
-  updateCoordInputs();
-});
+moveBtn.addEventListener('click', () => setTransformMode('translate'));
+rotateBtn.addEventListener('click', () => setTransformMode('rotate'));
+noneBtn.addEventListener('click', () => setTransformMode(null));
 
 gridBtn.addEventListener('click', () => {
   grid.visible = !grid.visible;
@@ -435,3 +434,4 @@ renderSlots(state, slotListEl, slotCallbacks);
 renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
 canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
 activateSlot(state.currentSlot);
+updateTransformButtons();
