@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
 import { GLTFLoader } from 'GLTFLoader';
+import { RGBELoader } from 'RGBELoader';
 import { TransformControls } from 'TransformControls';
 import { EffectComposer } from 'EffectComposer';
 import { RenderPass } from 'RenderPass';
@@ -40,6 +41,16 @@ renderer.setSize(viewer.clientWidth, viewer.clientHeight);
 viewer.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
+const pmrem = new THREE.PMREMGenerator(renderer);
+new RGBELoader().load(
+  'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/cyclorama_hard_light_1k.hdr',
+  (hdr) => {
+    const envMap = pmrem.fromEquirectangular(hdr).texture;
+    scene.environment = envMap;
+    hdr.dispose();
+    pmrem.dispose();
+  }
+);
 const camera = new THREE.PerspectiveCamera(60, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
 camera.position.set(0, 1, 3);
 const orbit = new OrbitControls(camera, renderer.domElement);
