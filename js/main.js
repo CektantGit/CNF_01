@@ -30,12 +30,14 @@ const moveBtn = document.getElementById('moveBtn');
 const rotateBtn = document.getElementById('rotateBtn');
 const noneBtn = document.getElementById('noneBtn');
 const gridBtn = document.getElementById('gridBtn');
+const outlineBtn = document.getElementById('outlineBtn');
 const coordsPanel = document.getElementById('coordsPanel');
 const coordX = document.getElementById('coordX');
 const coordY = document.getElementById('coordY');
 const coordZ = document.getElementById('coordZ');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const progressBar = document.getElementById('progressBar');
+outlineBtn.classList.add('active');
 
 // THREE.js setup
 const viewer = document.getElementById('viewer');
@@ -64,7 +66,8 @@ const orbit = new OrbitControls(camera, renderer.domElement);
 const loader = new GLTFLoader();
 const transform = new TransformControls(camera, renderer.domElement);
 transform.addEventListener('dragging-changed', e => { orbit.enabled = !e.value; });
-scene.add(transform);
+const gizmoScene = new THREE.Scene();
+gizmoScene.add(transform);
 
 // postprocessing for hover outline
 const composer = new EffectComposer(renderer);
@@ -76,7 +79,8 @@ const outlinePass = new OutlinePass(
   scene,
   camera
 );
-outlinePass.edgeStrength = 3;
+outlinePass.edgeStrength = 2;
+outlinePass.edgeThickness = 1;
 outlinePass.visibleEdgeColor.set(0x008efa);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 // ensure the outline blends normally over the scene
@@ -178,6 +182,9 @@ function hideLoading(){
 function animate() {
   requestAnimationFrame(animate);
   composer.render();
+  renderer.autoClear = false;
+  renderer.render(gizmoScene, camera);
+  renderer.autoClear = true;
 }
 animate();
 
@@ -450,6 +457,11 @@ noneBtn.addEventListener('click', () => setTransformMode(null));
 gridBtn.addEventListener('click', () => {
   grid.visible = !grid.visible;
   gridBtn.classList.toggle('active', grid.visible);
+});
+
+outlineBtn.addEventListener('click', () => {
+  outlinePass.enabled = !outlinePass.enabled;
+  outlineBtn.classList.toggle('active', outlinePass.enabled);
 });
 
 renderer.domElement.addEventListener('pointerdown', e => {
