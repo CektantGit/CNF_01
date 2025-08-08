@@ -3,6 +3,7 @@ import { OrbitControls } from 'OrbitControls';
 import { GLTFLoader } from 'GLTFLoader';
 import { GLTFExporter } from 'GLTFExporter';
 import { USDZExporter } from 'USDZExporter';
+import { BufferGeometryUtils } from 'BufferGeometryUtils';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots } from './viewer-ui.js';
 import { fetchObjectDetails } from './viewer-api.js';
@@ -58,40 +59,36 @@ function arrayBufferToBase64(buffer) {
 }
 
 function buildExportScene(srcScene) {
-  const expScene = new THREE.Scene();
-  const pos = new THREE.Vector3();
-  const quat = new THREE.Quaternion();
-  const scale = new THREE.Vector3();
+  const geometries = [];
+  const materials = [];
 
   srcScene.traverse((child) => {
     if (child.isMesh && child.visible) {
-      const material = Array.isArray(child.material)
-        ? child.material.map((m) => {
-            const mat = m.clone();
-            mat.side = THREE.FrontSide;
-            return mat;
-          })
-        : (() => {
-            const mat = child.material.clone();
-            mat.side = THREE.FrontSide;
-            return mat;
-          })();
-      const geometry = child.geometry.clone();
+      const mat = Array.isArray(child.material)
+        ? child.material[0].clone()
+        : child.material.clone();
+      mat.side = THREE.FrontSide;
+
+      const geom = child.geometry.clone();
       child.updateWorldMatrix(true, false);
-      child.matrixWorld.decompose(pos, quat, scale);
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.copy(pos);
-      mesh.quaternion.copy(quat);
-      mesh.scale.copy(scale);
-      expScene.add(mesh);
+      geom.applyMatrix4(child.matrixWorld);
+
+      geometries.push(geom);
+      materials.push(mat);
     }
   });
 
-  const box = new THREE.Box3().setFromObject(expScene);
-  const center = new THREE.Vector3();
-  box.getCenter(center);
-  expScene.children.forEach((c) => c.position.sub(center));
+  if (!geometries.length) return new THREE.Scene();
 
+  const merged = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
+  merged.computeBoundingBox();
+  const center = new THREE.Vector3();
+  merged.boundingBox.getCenter(center);
+  merged.translate(-center.x, -center.y, -center.z);
+
+  const mesh = new THREE.Mesh(merged, materials);
+  const expScene = new THREE.Scene();
+  expScene.add(mesh);
   return expScene;
 }
 
