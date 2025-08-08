@@ -52,6 +52,11 @@ const grid = new THREE.GridHelper(10, 10);
 grid.visible = false;
 scene.add(grid);
 
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let pointerDown = null;
+let pointerMoved = false;
+
 window.addEventListener('resize', () => {
   renderer.setSize(viewer.clientWidth, viewer.clientHeight);
   camera.aspect = viewer.clientWidth / viewer.clientHeight;
@@ -113,6 +118,7 @@ function loadObject(slot, obj, attach = false) {
       );
       mesh.scale.fromArray(obj.transform.scale);
       mesh.userData.stateObj = obj;
+      mesh.userData.slotId = slot.id;
       scene.add(mesh);
       meshes[slot.id] = mesh;
       if (attach && transformMode !== null) attachTransformControls(mesh, obj);
@@ -162,6 +168,24 @@ function activateSlot(slot) {
     loadSlot(slot, transformMode !== null);
   }
   transform.enabled = transformMode !== null;
+}
+
+function handleSceneClick(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const intersect = raycaster.intersectObjects(Object.values(meshes), true)[0];
+  if (!intersect) return;
+  let obj = intersect.object;
+  while (obj && !obj.userData.slotId) obj = obj.parent;
+  if (!obj || !obj.userData.slotId) return;
+  const slotIndex = state.slots.findIndex(s => s.id === obj.userData.slotId);
+  if (slotIndex === -1) return;
+  const slot = state.slots[slotIndex];
+  const objIdx = slot.objects.indexOf(obj.userData.stateObj);
+  if (objIdx !== -1) slot.selectedObjectIndex = objIdx;
+  slotCallbacks.onSelect(slotIndex);
 }
 
 // UI callbacks
@@ -303,6 +327,25 @@ noneBtn.addEventListener('click', () => {
 gridBtn.addEventListener('click', () => {
   grid.visible = !grid.visible;
   gridBtn.classList.toggle('active', grid.visible);
+});
+
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  pointerDown = { x: e.clientX, y: e.clientY };
+  pointerMoved = false;
+});
+
+renderer.domElement.addEventListener('pointermove', e => {
+  if (!pointerDown) return;
+  if (Math.abs(e.clientX - pointerDown.x) > 5 || Math.abs(e.clientY - pointerDown.y) > 5) {
+    pointerMoved = true;
+  }
+});
+
+renderer.domElement.addEventListener('pointerup', e => {
+  if (e.button !== 0 || !pointerDown) return;
+  if (!pointerMoved) handleSceneClick(e);
+  pointerDown = null;
 });
 
 inheritBtn.addEventListener('click', () => {
