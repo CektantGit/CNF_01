@@ -38,15 +38,19 @@ const progressBar = document.getElementById('progressBar');
 const viewer = document.getElementById('viewer');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.LinearToneMapping;
+renderer.physicallyCorrectLights = true;
+renderer.setClearColor(0xffffff, 1);
 viewer.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff);
 const pmrem = new THREE.PMREMGenerator(renderer);
 new RGBELoader().load(
-  'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/cyclorama_hard_light_1k.hdr',
+  'https://raw.githubusercontent.com/donmccurdy/three-gltf-viewer/master/assets/environment/neutral.hdr',
   (hdr) => {
     const envMap = pmrem.fromEquirectangular(hdr).texture;
     scene.environment = envMap;
+    scene.background = envMap;
     hdr.dispose();
     pmrem.dispose();
   }
@@ -70,15 +74,16 @@ const outlinePass = new OutlinePass(
   camera
 );
 outlinePass.edgeStrength = 3;
-outlinePass.visibleEdgeColor.set(0x00aaff);
+outlinePass.visibleEdgeColor.set(0x666666);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 composer.addPass(outlinePass);
 
-// soft, even lighting across the scene
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+// lighting similar to gltf-viewer defaults
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
 scene.add(ambientLight);
-const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.3);
-scene.add(hemiLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+dirLight.position.set(5, 10, 7.5);
+scene.add(dirLight);
 
 const grid = new THREE.GridHelper(10, 10);
 grid.visible = false;

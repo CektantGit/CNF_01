@@ -20,6 +20,9 @@ const arBtn = document.getElementById('arBtn');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.LinearToneMapping;
+renderer.physicallyCorrectLights = true;
 renderer.setClearColor(0xffffff, 1);
 container.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -28,19 +31,21 @@ controls.update();
 
 const pmrem = new THREE.PMREMGenerator(renderer);
 new RGBELoader().load(
-  'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/cyclorama_hard_light_1k.hdr',
+  'https://raw.githubusercontent.com/donmccurdy/three-gltf-viewer/master/assets/environment/neutral.hdr',
   (hdr) => {
     const envMap = pmrem.fromEquirectangular(hdr).texture;
     scene.environment = envMap;
+    scene.background = envMap;
     hdr.dispose();
     pmrem.dispose();
   }
 );
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+const ambient = new THREE.AmbientLight(0xffffff, 0.3);
 scene.add(ambient);
-const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.3);
-scene.add(hemi);
+const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+dirLight.position.set(5, 10, 7.5);
+scene.add(dirLight);
 
 // postprocessing for hover outline
 const composer = new EffectComposer(renderer);
@@ -48,7 +53,7 @@ const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 const outlinePass = new OutlinePass(new THREE.Vector2(1, 1), scene, camera);
 outlinePass.edgeStrength = 3;
-outlinePass.visibleEdgeColor.set(0x00aaff);
+outlinePass.visibleEdgeColor.set(0x666666);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 composer.addPass(outlinePass);
 
