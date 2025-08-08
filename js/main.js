@@ -311,8 +311,10 @@ addSlotBtn.addEventListener('click', () => {
 addObjectBtn.addEventListener('click', () => {
   if (!state.currentSlot) return;
   openObjectModal(modalEl, {
-    onSelect(objData) {
-      state.addObjectToCurrent(objData);
+    async onSelect(objData) {
+      const details = await fetchObjectDetails(objData.uuid);
+      if (!details) return;
+      state.addObjectToCurrent(details);
       renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
       loadSlot(state.currentSlot, true);
     }

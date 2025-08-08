@@ -2,43 +2,49 @@ export function renderSlots(container, state, onSelect){
   container.innerHTML='';
   state.slots.forEach((slot, sIdx)=>{
     const det=document.createElement('details');
+    det.open = slot.open;
+    det.addEventListener('toggle',()=>{slot.open = det.open;});
     const sum=document.createElement('summary');
     sum.textContent=slot.name;
     det.appendChild(sum);
     const list=document.createElement('div');
     list.className='object-list';
-    const createItem=(obj,oIdx)=>{
-      const item=document.createElement('div');
-      item.className='object-item';
-      if(slot.selectedIndex===oIdx) item.classList.add('selected');
-      if(obj){
+    if(slot.canBeEmpty){
+      const none=document.createElement('div');
+      none.className='object-item';
+      if(slot.selectedIndex===-1) none.classList.add('selected');
+      const noneThumb=document.createElement('div');
+      noneThumb.className='none-thumb';
+      noneThumb.textContent='✕';
+      none.appendChild(noneThumb);
+      const label=document.createElement('div');
+      label.className='label';
+      label.textContent='None';
+      none.appendChild(label);
+      none.addEventListener('click',()=>onSelect(sIdx,-1,0));
+      list.appendChild(none);
+    }
+    slot.objects.forEach((obj,oIdx)=>{
+      const objLabel=document.createElement('div');
+      objLabel.className='object-label';
+      objLabel.textContent=obj.name;
+      list.appendChild(objLabel);
+      obj.materials.forEach((mat,mIdx)=>{
+        const item=document.createElement('div');
+        item.className='object-item';
+        if(slot.selectedIndex===oIdx && obj.selectedMaterial===mIdx) item.classList.add('selected');
         const img=document.createElement('img');
-        const prev=obj.materials[0]?.previews?.[0];
+        const prev=mat.previews?.[0];
         img.src=prev?.subRes?.small||prev?.url||'';
-        img.alt=obj.name;
+        img.alt=mat.name;
         item.appendChild(img);
         const label=document.createElement('div');
         label.className='label';
-        label.textContent=obj.name;
+        label.textContent=mat.name;
         item.appendChild(label);
-      }else{
-        const none=document.createElement('div');
-        none.className='none-thumb';
-        none.textContent='✕';
-        item.appendChild(none);
-        const label=document.createElement('div');
-        label.className='label';
-        label.textContent='None';
-        item.appendChild(label);
-      }
-      item.addEventListener('click',()=>onSelect(sIdx,oIdx));
-      return item;
-    };
-    if(slot.canBeEmpty){
-      list.appendChild(createItem(null,-1));
-    }
-    slot.objects.forEach((obj,oIdx)=>{
-      list.appendChild(createItem(obj,oIdx));
+        item.addEventListener('click',()=>onSelect(sIdx,oIdx,mIdx));
+        list.appendChild(item);
+      });
     });
     det.appendChild(list);
     container.appendChild(det);

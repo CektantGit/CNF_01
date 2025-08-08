@@ -11,7 +11,8 @@ export class ViewerState{
         name: slotData.name,
         canBeEmpty: slotData.canBeEmpty,
         objects: [],
-        selectedIndex: slotData.canBeEmpty ? -1 : 0
+        selectedIndex: slotData.canBeEmpty ? -1 : 0,
+        open:false
       };
       for(const obj of slotData.objects || []){
         const details = await fetchDetails(obj.uuid);
@@ -20,6 +21,7 @@ export class ViewerState{
           uuid: obj.uuid,
           name: details.name,
           materials: details.materials || [],
+          selectedMaterial:0,
           transform: {
             position: obj.position || [0,0,0],
             rotation: obj.rotation || [0,0,0],

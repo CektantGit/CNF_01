@@ -16,6 +16,7 @@ const arBtn = document.getElementById('arBtn');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setClearColor(0xffffff, 1);
 container.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 camera.position.set(3, 3, 3);
@@ -59,7 +60,7 @@ function hideLoading() {
 
 async function loadMesh(obj) {
   if (obj.mesh) return obj.mesh;
-  const mat = obj.materials[0];
+  const mat = obj.materials[obj.selectedMaterial || 0];
   const url = mat?.native?.glbUrl;
   if (!url) return null;
   return await new Promise((resolve) => {
@@ -81,7 +82,7 @@ async function loadMesh(obj) {
   });
 }
 
-async function selectObject(slotIdx, objIdx) {
+async function selectObject(slotIdx, objIdx, matIdx) {
   const slot = state.slots[slotIdx];
   if (slot.currentMesh) {
     scene.remove(slot.currentMesh);
@@ -93,6 +94,8 @@ async function selectObject(slotIdx, objIdx) {
     return;
   }
   const obj = slot.objects[objIdx];
+  if (typeof matIdx === 'number') obj.selectedMaterial = matIdx;
+  obj.mesh = null; // force reload for new material
   const mesh = await loadMesh(obj);
   hideLoading();
   if (!mesh) {
@@ -116,8 +119,10 @@ async function handleImport(file) {
   await state.loadConfig(data, fetchObjectDetails);
   renderSlots(slotPanel, state, selectObject);
   for (let i = 0; i < state.slots.length; i++) {
-    if (state.slots[i].selectedIndex >= 0) {
-      await selectObject(i, state.slots[i].selectedIndex);
+    const slot = state.slots[i];
+    if (slot.selectedIndex >= 0) {
+      const obj = slot.objects[slot.selectedIndex];
+      await selectObject(i, slot.selectedIndex, obj.selectedMaterial);
     }
   }
 }

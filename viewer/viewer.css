@@ -110,6 +110,12 @@ button:hover {
   color:var(--color-Gray-70);
 }
 
+.object-label{
+  width:100%;
+  font-weight:600;
+  margin-top:8px;
+}
+
 /* loading overlay */
 #loadingOverlay {
   position:fixed;
