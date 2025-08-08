@@ -53,6 +53,9 @@ export function renderObjects(slot, container, { onSelectObject, onSelectMateria
         e.stopPropagation();
         onSelectMaterial(objIndex, matIndex);
       });
+      if (objIndex === slot.selectedObjectIndex && matIndex === obj.selectedMaterial) {
+        btn.classList.add('selected');
+      }
       matList.appendChild(btn);
     });
     card.appendChild(title);

@@ -91,7 +91,7 @@ function loadObject(slot, obj, attach = false) {
     mesh.userData.stateObj = obj;
     scene.add(mesh);
     meshes[slot.id] = mesh;
-    if (attach) attachTransformControls(mesh, obj);
+    if (attach && transformMode !== null) attachTransformControls(mesh, obj);
   });
 }
 
@@ -104,27 +104,30 @@ function loadSlot(slot, attach = false) {
   }
   if (slot.selectedObjectIndex === -1) return;
   const obj = slot.objects[slot.selectedObjectIndex];
-  loadObject(slot, obj, attach);
+  loadObject(slot, obj, attach && transformMode !== null);
 }
 
 function attachTransformControls(mesh, obj) {
+  if (transformMode === null) return;
   mesh.userData.stateObj = obj;
   transform.attach(mesh);
-  transform.enabled = transformMode !== null;
+  transform.enabled = true;
 }
 
 function activateSlot(slot) {
-  if (!slot || slot.selectedObjectIndex === -1) {
+  if (transformMode === null) {
     transform.detach();
+  }
+  if (!slot || slot.selectedObjectIndex === -1) {
     return;
   }
   const mesh = meshes[slot.id];
   if (mesh) {
-    transform.attach(mesh);
-    transform.enabled = transformMode !== null;
+    if (transformMode !== null) transform.attach(mesh);
   } else {
-    loadSlot(slot, true);
+    loadSlot(slot, transformMode !== null);
   }
+  transform.enabled = transformMode !== null;
 }
 
 // UI callbacks
@@ -158,11 +161,11 @@ const objectCallbacks = {
   },
   onSelectMaterial(objIndex, matIndex) {
     const slot = state.currentSlot;
+    slot.selectedObjectIndex = objIndex;
     const obj = slot.objects[objIndex];
     obj.selectedMaterial = matIndex;
-    if (slot.selectedObjectIndex === objIndex) {
-      loadSlot(slot, true);
-    }
+    renderObjects(slot, objectsContainer, objectCallbacks);
+    loadSlot(slot, true);
   },
   onDelete(objIndex) {
     const slot = state.currentSlot;
@@ -220,14 +223,24 @@ moveBtn.addEventListener('click', () => {
   transformMode = 'translate';
   transform.setMode('translate');
   transform.enabled = true;
-  if (transform.object) transform.attach(transform.object);
+  if (transform.object) {
+    transform.attach(transform.object);
+  } else {
+    const mesh = meshes[state.currentSlot?.id];
+    if (mesh) transform.attach(mesh);
+  }
 });
 
 rotateBtn.addEventListener('click', () => {
   transformMode = 'rotate';
   transform.setMode('rotate');
   transform.enabled = true;
-  if (transform.object) transform.attach(transform.object);
+  if (transform.object) {
+    transform.attach(transform.object);
+  } else {
+    const mesh = meshes[state.currentSlot?.id];
+    if (mesh) transform.attach(mesh);
+  }
 });
 
 noneBtn.addEventListener('click', () => {
