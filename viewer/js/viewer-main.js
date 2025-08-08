@@ -80,7 +80,7 @@ function buildExportScene(srcScene) {
 
   if (!geometries.length) return new THREE.Scene();
 
-  const merged = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
+  const merged = BufferGeometryUtils.mergeGeometries(geometries, true);
   merged.computeBoundingBox();
   const center = new THREE.Vector3();
   merged.boundingBox.getCenter(center);
