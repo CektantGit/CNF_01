@@ -16,12 +16,6 @@ export function renderSlots(state, container, { onSelect, onDelete, onToggleHide
       });
     const nameSpan = document.createElement('span');
     nameSpan.textContent = slot.name;
-    const delBtn = document.createElement('button');
-    delBtn.textContent = 'X';
-    delBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      onDelete(slot.id);
-    });
     const hideBtn = document.createElement('button');
     hideBtn.textContent = 'Hide';
     hideBtn.className = 'hide-btn' + (slot.hidden ? ' active' : '');
@@ -29,9 +23,18 @@ export function renderSlots(state, container, { onSelect, onDelete, onToggleHide
       e.stopPropagation();
       onToggleHide(slot);
     });
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'X';
+    delBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      onDelete(slot.id);
+    });
+    const actions = document.createElement('div');
+    actions.className = 'slot-actions';
+    actions.appendChild(hideBtn);
+    actions.appendChild(delBtn);
     li.appendChild(nameSpan);
-    li.appendChild(delBtn);
-    li.appendChild(hideBtn);
+    li.appendChild(actions);
     container.appendChild(li);
   });
 }
