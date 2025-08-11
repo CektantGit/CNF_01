@@ -4,6 +4,7 @@ export class ConfiguratorState {
     this.steps = [defaultStep];
     this.slots = [];
     this.currentSlotIndex = -1;
+    this.currentStepIndex = 0;
   }
 
   clear() {
@@ -11,9 +12,11 @@ export class ConfiguratorState {
     this.steps = [def];
     this.slots = [];
     this.currentSlotIndex = -1;
+    this.currentStepIndex = 0;
   }
 
   addSlot(name = 'New slot') {
+    const stepId = this.currentStep ? this.currentStep.id : this.steps[0].id;
     const slot = {
       id: crypto.randomUUID(),
       name,
@@ -21,7 +24,7 @@ export class ConfiguratorState {
       selectedObjectIndex: -1,
       canBeEmpty: false,
        hidden: false,
-       stepId: this.steps[0].id
+       stepId
     };
     this.slots.push(slot);
     this.currentSlotIndex = this.slots.length - 1;
@@ -104,6 +107,7 @@ export class ConfiguratorState {
       this.steps = [def];
     }
     this.steps.sort((a, b) => a.index - b.index);
+    this.currentStepIndex = 0;
     const entries = Object.entries(data.slots || {});
     for (const [id, slotData] of entries) {
       const objects = [];
@@ -124,6 +128,12 @@ export class ConfiguratorState {
       }
       this.addSlotFromData(id, slotData.name, objects, slotData.canBeEmpty, slotData.step || this.steps[0].id);
     }
+    const firstIdx = this.slots.findIndex(s=>s.stepId===this.currentStep.id);
+    this.currentSlotIndex = firstIdx;
+  }
+
+  get currentStep(){
+    return this.steps[this.currentStepIndex];
   }
 
   exportJSON() {

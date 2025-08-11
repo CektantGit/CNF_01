@@ -1,6 +1,7 @@
-export function renderSlots(container, state, stepId, onSelect){
+export function renderSlots(container, state, onSelect){
   container.innerHTML='';
-  state.slots.filter(s=>s.stepId===stepId).forEach((slot, sIdx)=>{
+  state.slots.forEach((slot)=>{
+    const sIdx = state.slots.indexOf(slot);
     const det=document.createElement('details');
     det.open = slot.open;
     det.addEventListener('toggle',()=>{slot.open = det.open;});

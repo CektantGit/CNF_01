@@ -1,6 +1,7 @@
-export function renderSlots(state, container, { onSelect, onDelete, onToggleHide }) {
+export function renderSlots(state, container, { onSelect, onDelete, onToggleHide }, stepId) {
   container.innerHTML = '';
-  state.slots.forEach((slot, index) => {
+  state.slots.filter(s=>s.stepId===stepId).forEach((slot) => {
+    const index = state.slots.indexOf(slot);
     const li = document.createElement('li');
     li.className = 'slot' + (index === state.currentSlotIndex ? ' selected' : '');
     li.addEventListener('click', () => {
@@ -78,9 +79,10 @@ export function renderObjects(slot, container, { onSelectObject, onSelectMateria
   });
 }
 
-export function renderSlotsMobile(state, container, slotCallbacks, objectCallbacks){
+export function renderSlotsMobile(state, container, slotCallbacks, objectCallbacks, stepId){
   container.innerHTML='';
-  state.slots.forEach((slot, index)=>{
+  state.slots.filter(s=>s.stepId===stepId).forEach((slot)=>{
+    const index = state.slots.indexOf(slot);
     const det=document.createElement('details');
     det.className='slot-mobile';
     det.open = slot._mobileOpen || false;
@@ -91,7 +93,7 @@ export function renderSlotsMobile(state, container, slotCallbacks, objectCallbac
       if(state.currentSlotIndex===index){
         if(e.detail===2){
           const newName=prompt('Rename slot',slot.name);
-          if(newName){slot.name=newName;renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);} }
+          if(newName){slot.name=newName;renderSlotsMobile(state,container,slotCallbacks,objectCallbacks,stepId);} }
       }else{
         slotCallbacks.onSelect(index);
       }
@@ -101,11 +103,11 @@ export function renderSlotsMobile(state, container, slotCallbacks, objectCallbac
     const hide=document.createElement('button');
     hide.textContent='Hide';
     hide.className='hide-btn'+(slot.hidden?' active':'');
-    hide.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onToggleHide(slot);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);});
+    hide.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onToggleHide(slot);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks,stepId);});
     const del=document.createElement('button');
     del.textContent='X';
     del.className='action-btn';
-    del.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onDelete(slot.id);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);});
+    del.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onDelete(slot.id);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks,stepId);});
     actions.appendChild(hide);actions.appendChild(del);sum.appendChild(actions);
     det.appendChild(sum);
     const body=document.createElement('div');
@@ -118,7 +120,7 @@ export function renderSlotsMobile(state, container, slotCallbacks, objectCallbac
       const delBtn=document.createElement('button');
       delBtn.textContent='Delete';
       delBtn.className='action-btn';
-      delBtn.addEventListener('click',()=>{state.currentSlotIndex=index;objectCallbacks.onDelete(objIndex);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);});
+      delBtn.addEventListener('click',()=>{state.currentSlotIndex=index;objectCallbacks.onDelete(objIndex);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks,stepId);});
       const matList=document.createElement('div');
       matList.className='material-list';
       obj.materials.forEach((mat,matIndex)=>{
@@ -126,7 +128,7 @@ export function renderSlotsMobile(state, container, slotCallbacks, objectCallbac
         const img=document.createElement('img');
         const url=mat.previews?.[0]?.subRes?.small||mat.previews?.[0]?.url;
         img.src=url||'';img.alt=mat.name;btn.appendChild(img);
-        btn.addEventListener('click',e=>{e.stopPropagation();state.currentSlotIndex=index;objectCallbacks.onSelectMaterial(objIndex,matIndex);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks);});
+        btn.addEventListener('click',e=>{e.stopPropagation();state.currentSlotIndex=index;objectCallbacks.onSelectMaterial(objIndex,matIndex);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks,stepId);});
         if(objIndex===slot.selectedObjectIndex && matIndex===obj.selectedMaterial){btn.classList.add('selected');}
         matList.appendChild(btn);
       });

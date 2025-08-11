@@ -18,6 +18,11 @@ const state = new ConfiguratorState();
 
 const slotListEl = document.getElementById('slots');
 const addSlotBtn = document.getElementById('addSlotBtn');
+const prevStepBtn = document.getElementById('prevStep');
+const nextStepBtn = document.getElementById('nextStep');
+const stepNameEl = document.getElementById('stepName');
+const delStepBtn = document.getElementById('delStep');
+const stepControls = document.getElementById('stepControls');
 const addObjectBtn = document.getElementById('addObjectBtn');
 const inheritBtn = document.getElementById('inheritBtn');
 const objectsContainer = document.getElementById('objects');
@@ -321,10 +326,11 @@ function handleSceneClick(event) {
 const slotCallbacks = {
   onSelect(index) {
     state.currentSlotIndex = index;
+    const stepIdx = state.steps.findIndex(st=>st.id===state.slots[index].stepId);
+    if(stepIdx!==-1) state.currentStepIndex = stepIdx;
     renderUI();
-    canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
     activateSlot(state.currentSlot);
-    const el = slotListEl.children[index];
+    const el = slotListEl.children[state.slots.filter(s=>s.stepId===state.currentStep.id).indexOf(state.currentSlot)];
     if (el) el.scrollIntoView({ block: 'nearest' });
   },
   onDelete(id) {
@@ -336,7 +342,6 @@ const slotCallbacks = {
     }
     state.removeSlot(id);
     renderUI();
-    canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
     activateSlot(state.currentSlot);
   },
   onToggleHide(slot) {
@@ -426,6 +431,27 @@ importInput.addEventListener('change', async e => {
 
 stepsBtn.addEventListener('click', () => {
   openStepsModal(stepsModal, state, renderUI);
+});
+
+function changeStep(delta){
+  const len = state.steps.length;
+  state.currentStepIndex = (state.currentStepIndex + delta + len) % len;
+  const stepId = state.currentStep.id;
+  const idx = state.slots.findIndex(s=>s.stepId===stepId);
+  state.currentSlotIndex = idx;
+  renderUI();
+}
+
+prevStepBtn.addEventListener('click',()=>changeStep(-1));
+nextStepBtn.addEventListener('click',()=>changeStep(1));
+delStepBtn.addEventListener('click',()=>{
+  if(state.steps.length<=1) return;
+  const step = state.currentStep;
+  const idx = state.steps.indexOf(step);
+  state.steps.splice(idx,1);
+  state.slots.forEach(s=>{ if(s.stepId===step.id) s.stepId = state.steps[0].id; });
+  if(state.currentStepIndex>=state.steps.length) state.currentStepIndex=0;
+  renderUI();
 });
 
 function updateTransformButtons() {
@@ -528,14 +554,23 @@ async function handleImport(data) {
 state.addSlot();
 
 function renderUI(){
+  if(state.currentStepIndex>=state.steps.length) state.currentStepIndex = 0;
+  const step = state.currentStep;
+  stepNameEl.textContent = step.name;
+  stepControls.style.display = state.steps.length>1 ? 'flex' : 'none';
+  if(state.currentSlot?.stepId !== step.id){
+    const idx = state.slots.findIndex(s=>s.stepId===step.id);
+    state.currentSlotIndex = idx;
+  }
   if(isMobile()){
     objectsContainer.parentElement.style.display='none';
-    renderSlotsMobile(state, slotListEl, slotCallbacks, objectCallbacks);
+    renderSlotsMobile(state, slotListEl, slotCallbacks, objectCallbacks, step.id);
   }else{
     objectsContainer.parentElement.style.display='block';
-    renderSlots(state, slotListEl, slotCallbacks);
+    renderSlots(state, slotListEl, slotCallbacks, step.id);
     renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
   }
+  canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
 }
 
 renderUI();

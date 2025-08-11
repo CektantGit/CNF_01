@@ -33,14 +33,6 @@ html,body {
   padding:10px;
 }
 
-#stepControls {
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:8px;
-  margin-bottom:8px;
-}
-
 @media(max-width:768px){
   #viewerWrapper {flex-direction:column;}
   #viewerCanvas {height:66.666%;flex:none;}

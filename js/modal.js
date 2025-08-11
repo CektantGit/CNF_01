@@ -114,9 +114,24 @@ export function openStepsModal(modalEl, state, onSave) {
     state.steps.forEach((step) => {
       const row = document.createElement('div');
       row.className = 'step-row';
+      const header = document.createElement('div');
+      header.className = 'step-header';
       const name = document.createElement('input');
       name.value = step.name;
-      row.appendChild(name);
+      header.appendChild(name);
+      const del = document.createElement('button');
+      del.textContent = 'Delete';
+      del.className = 'action-btn';
+      del.addEventListener('click', () => {
+        if(state.steps.length<=1) return;
+        const idx = state.steps.indexOf(step);
+        const removed = state.steps.splice(idx,1)[0];
+        state.slots.forEach(s=>{ if(s.stepId===removed.id) s.stepId = state.steps[0].id; });
+        if(state.currentStepIndex>=state.steps.length) state.currentStepIndex=0;
+        render();
+      });
+      header.appendChild(del);
+      row.appendChild(header);
       const checks = document.createElement('div');
       checks.className = 'slot-checks';
       state.slots.forEach((slot) => {

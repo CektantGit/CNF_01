@@ -17,10 +17,6 @@ import { fetchObjectDetails } from './viewer-api.js';
 const container = document.getElementById('viewerCanvas');
 const slotPanel = document.getElementById('slotPanel');
 const slotsContainer = document.getElementById('slotsContainer');
-const prevStepBtn = document.getElementById('prevStep');
-const nextStepBtn = document.getElementById('nextStep');
-const stepNameEl = document.getElementById('stepName');
-const stepControls = document.getElementById('stepControls');
 const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
 const arBtn = document.getElementById('arBtn');
@@ -101,21 +97,8 @@ let pointerMoved = false;
 let hovered = null;
 
 function renderUI(){
-  const step = state.currentStep;
-  stepNameEl.textContent = step.name;
-  renderSlots(slotsContainer, state, step.id, selectObject);
-  stepControls.style.display = state.steps.length > 1 ? 'flex' : 'none';
+  renderSlots(slotsContainer, state, selectObject);
 }
-
-function changeStep(delta){
-  if(state.steps.length<=1) return;
-  const len = state.steps.length;
-  state.currentStepIndex = (state.currentStepIndex + delta + len) % len;
-  applyStep();
-}
-
-prevStepBtn.addEventListener('click',()=>changeStep(-1));
-nextStepBtn.addEventListener('click',()=>changeStep(1));
 
 function arrayBufferToBase64(buffer) {
   let binary = '';
@@ -238,16 +221,14 @@ function setHovered(obj) {
   outlinePass.selectedObjects = obj ? [obj] : [];
 }
 
-async function applyStep(){
+async function loadAll(){
   state.slots.forEach(s=>{
     if(s.currentMesh){
       scene.remove(s.currentMesh);
       s.currentMesh=null;
     }
   });
-  const stepId = state.currentStep.id;
-  const slots = state.slots.filter(s=>s.stepId===stepId);
-  for(const slot of slots){
+  for(const slot of state.slots){
     if(slot.selectedIndex>=0){
       const obj = slot.objects[slot.selectedIndex];
       const mesh = await loadMesh(obj);
@@ -296,7 +277,7 @@ function handleSceneClick(event) {
   slot.selectedIndex = objIdx;
   slot.open = true;
     renderUI();
-    const slotEl = slotsContainer.children[state.slots.filter(s=>s.stepId===state.currentStep.id).indexOf(slot)];
+    const slotEl = slotsContainer.children[state.slots.indexOf(slot)];
   if (slotEl) {
     slotEl.open = true;
     slotEl.scrollIntoView({ block: 'nearest' });
@@ -340,7 +321,7 @@ async function handleImport(file) {
   });
 
   await state.loadConfig(data, fetchObjectDetails);
-  applyStep();
+  await loadAll();
 }
 
 importBtn.addEventListener('click', () => importInput.click());
