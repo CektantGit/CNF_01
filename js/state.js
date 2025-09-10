@@ -18,11 +18,41 @@ export class ConfiguratorState {
     return { id: crypto.randomUUID(), name, steps: [step], slots: [] };
   }
 
+  _cloneVariant(src, name) {
+    const stepMap = new Map();
+    const steps = src.steps.map(s => {
+      const id = crypto.randomUUID();
+      stepMap.set(s.id, id);
+      return { id, name: s.name, index: s.index };
+    });
+    const slots = src.slots.map(s => ({
+      id: crypto.randomUUID(),
+      name: s.name,
+      objects: s.objects.map(o => ({
+        uuid: o.uuid,
+        name: o.name,
+        materials: o.materials,
+        selectedMaterial: o.selectedMaterial,
+        transform: {
+          position: [...o.transform.position],
+          rotation: [...o.transform.rotation],
+          scale: [...o.transform.scale]
+        }
+      })),
+      selectedObjectIndex: s.selectedObjectIndex,
+      canBeEmpty: s.canBeEmpty,
+      hidden: s.hidden,
+      stepId: stepMap.get(s.stepId) || steps[0].id
+    }));
+    return { id: crypto.randomUUID(), name, steps, slots };
+  }
+
   addVariant(name = `Variant ${this.variants.length + 1}`) {
-    const v = this._createVariant(name);
+    const base = this.currentVariant;
+    const v = this._cloneVariant(base, name);
     this.variants.push(v);
     this.currentVariantIndex = this.variants.length - 1;
-    this.currentSlotIndex = -1;
+    this.currentSlotIndex = base.slots.length ? 0 : -1;
     this.currentStepIndex = 0;
     return v;
   }
