@@ -245,6 +245,16 @@ async function loadAll(){
     if(url){
       const gltf=await loader.loadAsync(url);
       envMesh=gltf.scene;
+      envMesh.traverse(ch=>{
+        if(ch.isMesh){
+          ch.castShadow=false; ch.receiveShadow=false;
+          const m=ch.material;
+          ch.material=new THREE.MeshBasicMaterial({
+            map:m.map, aoMap:m.aoMap, aoMapIntensity:m.aoMapIntensity,
+            color:m.color?.clone(), transparent:m.transparent, opacity:m.opacity, side:m.side
+          });
+        }
+      });
       envMesh.position.fromArray(state.environment.transform.position);
       envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
       envMesh.scale.fromArray(state.environment.transform.scale);
