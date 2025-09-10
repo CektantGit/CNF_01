@@ -99,6 +99,7 @@ const pointer = new THREE.Vector2();
 let pointerDown = null;
 let pointerMoved = false;
 let hovered = null;
+let envMesh = null;
 
 function renderUI(){
   if(state.currentStep){
@@ -233,12 +234,22 @@ function setHovered(obj) {
 }
 
 async function loadAll(){
+  if(envMesh){scene.remove(envMesh); envMesh=null;}
   state.slots.forEach(s=>{
-    if(s.currentMesh){
-      scene.remove(s.currentMesh);
-      s.currentMesh=null;
-    }
+    if(s.currentMesh){ scene.remove(s.currentMesh); s.currentMesh=null; }
   });
+  if(state.environment){
+    const mat=state.environment.materials[state.environment.selectedMaterial];
+    const url=mat?.native?.glbUrl;
+    if(url){
+      const gltf=await loader.loadAsync(url);
+      envMesh=gltf.scene;
+      envMesh.position.fromArray(state.environment.transform.position);
+      envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
+      envMesh.scale.fromArray(state.environment.transform.scale);
+      scene.add(envMesh);
+    }
+  }
   for(const slot of state.slots){
     if(slot.selectedIndex>=0){
       const obj = slot.objects[slot.selectedIndex];

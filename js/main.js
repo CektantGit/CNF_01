@@ -17,6 +17,10 @@ import { fetchObjectDetails } from './api.js';
 const state = new ConfiguratorState();
 
 const slotListEl = document.getElementById('slots');
+const variantSelect = document.getElementById('variantSelect');
+const addVariantBtn = document.getElementById('addVariant');
+const delVariantBtn = document.getElementById('delVariant');
+const renVariantBtn = document.getElementById('renVariant');
 const addSlotBtn = document.getElementById('addSlotBtn');
 const prevStepBtn = document.getElementById('prevStep');
 const nextStepBtn = document.getElementById('nextStep');
@@ -44,6 +48,12 @@ const coordY = document.getElementById('coordY');
 const coordZ = document.getElementById('coordZ');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const progressBar = document.getElementById('progressBar');
+const envBtn = document.getElementById('envBtn');
+const envModal = document.getElementById('envModal');
+const envUuidInput = document.getElementById('envUuid');
+const loadEnvBtn = document.getElementById('loadEnv');
+const removeEnvBtn = document.getElementById('removeEnv');
+const closeEnvBtn = document.getElementById('closeEnv');
 outlineBtn.classList.add('active');
 
 // THREE.js setup
@@ -133,6 +143,7 @@ function handleResize(){
 window.addEventListener('resize', handleResize);
 
 const meshes = {};
+let envMesh = null;
 let transformMode = null;
 
 const axisNames = ['x','y','z'];
@@ -160,7 +171,7 @@ function updateCoordInputs(){
     if (!transform.object) return;
     const val = parseFloat(input.value);
     if (isNaN(val)) return;
-    const obj = transform.object.userData.stateObj;
+    const obj = transform.object.userData.stateObj || transform.object.userData.envObj;
     if (transformMode === 'translate') {
       transform.object.position[axisNames[idx]] = val;
       obj.transform.position[idx] = val;
@@ -186,6 +197,54 @@ function hideLoading(){
   loadingOverlay.style.display='none';
 }
 
+function loadEnvironment(env){
+  if(envMesh){
+    if(transform.object===envMesh) transform.detach();
+    scene.remove(envMesh);
+    envMesh=null;
+  }
+  if(!env) { updateCoordInputs(); return; }
+  const mat = env.materials[env.selectedMaterial];
+  const url = mat?.native?.glbUrl;
+  if(!url) return;
+  const loadId = crypto.randomUUID();
+  env._loadId = loadId;
+  showLoading();
+  loader.load(url, gltf=>{
+    if(env._loadId!==loadId){hideLoading();return;}
+    envMesh=gltf.scene;
+    envMesh.position.fromArray(env.transform.position);
+    envMesh.rotation.set(
+      THREE.MathUtils.degToRad(env.transform.rotation[0]),
+      THREE.MathUtils.degToRad(env.transform.rotation[1]),
+      THREE.MathUtils.degToRad(env.transform.rotation[2])
+    );
+    envMesh.scale.fromArray(env.transform.scale);
+    envMesh.userData.envObj = env;
+    scene.add(envMesh);
+    if(transformMode!==null && state.currentSlotIndex===-1) transform.attach(envMesh); else transform.detach();
+    hideLoading();
+  },xhr=>{ if(xhr.total) updateLoading(xhr.loaded/xhr.total); },err=>{console.error(err);hideLoading();});
+}
+
+function reloadScene(){
+  Object.values(meshes).forEach(m=>{ if(transform.object===m) transform.detach(); scene.remove(m);});
+  Object.keys(meshes).forEach(k=>delete meshes[k]);
+  if(envMesh){ if(transform.object===envMesh) transform.detach(); scene.remove(envMesh); envMesh=null; }
+  if(state.environment) loadEnvironment(state.environment);
+  state.slots.forEach((slot,idx)=>loadSlot(slot, idx===state.currentSlotIndex));
+}
+
+function renderVariants(){
+  variantSelect.innerHTML='';
+  state.variants.forEach((v,i)=>{
+    const opt=document.createElement('option');
+    opt.value=i; opt.textContent=v.name;
+    variantSelect.appendChild(opt);
+  });
+  variantSelect.value=state.currentVariantIndex;
+}
+
 function animate() {
   requestAnimationFrame(animate);
   composer.render();
@@ -197,7 +256,7 @@ animate();
 
 // track transform changes for the currently attached object
 transform.addEventListener('objectChange', () => {
-  const obj = transform.object?.userData?.stateObj;
+  const obj = transform.object?.userData?.stateObj || transform.object?.userData?.envObj;
   if (!obj) return;
   obj.transform.position = [transform.object.position.x, transform.object.position.y, transform.object.position.z];
   obj.transform.rotation = [
@@ -298,9 +357,11 @@ function handleHover(event) {
   pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
-  const intersect = raycaster.intersectObjects(Object.values(meshes), true)[0];
+  const objs = [...Object.values(meshes)];
+  if(envMesh) objs.push(envMesh);
+  const intersect = raycaster.intersectObjects(objs, true)[0];
   let obj = intersect ? intersect.object : null;
-  while (obj && !obj.userData.slotId) obj = obj.parent;
+  while (obj && !obj.userData.slotId && !obj.userData.envObj) obj = obj.parent;
   setHovered(obj);
 }
 
@@ -309,11 +370,20 @@ function handleSceneClick(event) {
   pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
-  const intersect = raycaster.intersectObjects(Object.values(meshes), true)[0];
+  const objs2 = [...Object.values(meshes)];
+  if(envMesh) objs2.push(envMesh);
+  const intersect = raycaster.intersectObjects(objs2, true)[0];
   if (!intersect) return;
   let obj = intersect.object;
-  while (obj && !obj.userData.slotId) obj = obj.parent;
-  if (!obj || !obj.userData.slotId) return;
+  while (obj && !obj.userData.slotId && !obj.userData.envObj) obj = obj.parent;
+  if (!obj) return;
+  if(obj.userData.envObj){
+    state.currentSlotIndex = -1;
+    if(transformMode!==null) transform.attach(envMesh); else transform.detach();
+    transform.enabled = transformMode !== null;
+    updateCoordInputs();
+    return;
+  }
   const slotIndex = state.slots.findIndex(s => s.id === obj.userData.slotId);
   if (slotIndex === -1) return;
   const slot = state.slots[slotIndex];
@@ -454,6 +524,32 @@ delStepBtn.addEventListener('click',()=>{
   renderUI();
 });
 
+variantSelect.addEventListener('change',()=>{
+  state.currentVariantIndex=parseInt(variantSelect.value); state.currentSlotIndex=-1; state.currentStepIndex=0;
+  renderUI();
+  reloadScene();
+});
+addVariantBtn.addEventListener('click',()=>{state.addVariant(); renderVariants(); renderUI(); reloadScene();});
+delVariantBtn.addEventListener('click',()=>{state.deleteCurrentVariant(); renderVariants(); renderUI(); reloadScene();});
+renVariantBtn.addEventListener('click',()=>{const name=prompt('Variant name',state.currentVariant.name); if(name){state.renameCurrentVariant(name); renderVariants();}});
+
+envBtn.addEventListener('click',()=>{envModal.style.display='block';});
+closeEnvBtn.addEventListener('click',()=>{envModal.style.display='none';});
+loadEnvBtn.addEventListener('click',async()=>{
+  const uuid=envUuidInput.value.trim(); if(!uuid) return;
+  const details=await fetchObjectDetails(uuid); if(!details) return;
+  const env={uuid,name:details.name,materials:details.materials||[],selectedMaterial:0,transform:{position:[0,0,0],rotation:[0,0,0],scale:[1,1,1]}};
+  state.setEnvironment(env);
+  envModal.style.display='none';
+  loadEnvironment(env);
+});
+removeEnvBtn.addEventListener('click',()=>{
+  state.removeEnvironment();
+  if(envMesh){ if(transform.object===envMesh) transform.detach(); scene.remove(envMesh); envMesh=null; }
+  envModal.style.display='none';
+  updateCoordInputs();
+});
+
 function updateTransformButtons() {
   moveBtn.classList.toggle('active', transformMode === 'translate');
   rotateBtn.classList.toggle('active', transformMode === 'rotate');
@@ -533,21 +629,13 @@ canBeEmptyChk.addEventListener('change', () => {
 });
 
 async function handleImport(data) {
-  Object.values(meshes).forEach(m => {
-    if (transform.object === m) transform.detach();
-    scene.remove(m);
-  });
-  Object.keys(meshes).forEach(k => delete meshes[k]);
-
+  reloadScene();
   setTransformMode(null);
   await state.importJSON(data, fetchObjectDetails);
-
+  renderVariants();
   renderUI();
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
-
-  state.slots.forEach((slot, idx) => {
-    loadSlot(slot, idx === state.currentSlotIndex);
-  });
+  reloadScene();
 }
 
 // initialize
@@ -558,6 +646,7 @@ function renderUI(){
   const step = state.currentStep;
   stepNameEl.textContent = step.name;
   stepControls.style.display = state.steps.length>1 ? 'flex' : 'none';
+  renderVariants();
   if(state.currentSlot?.stepId !== step.id){
     const idx = state.slots.findIndex(s=>s.stepId===step.id);
     state.currentSlotIndex = idx;
@@ -577,3 +666,4 @@ renderUI();
 canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
 activateSlot(state.currentSlot);
 updateTransformButtons();
+reloadScene();
