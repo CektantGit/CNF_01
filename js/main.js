@@ -457,9 +457,10 @@ const objectCallbacks = {
 };
 
 addSlotBtn.addEventListener('click', () => {
-  state.addSlot();
+  const slot = state.addSlot();
   renderUI();
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
+  if(slot.selectedObjectIndex !== -1) loadSlot(slot, true);
 });
 
 addObjectBtn.addEventListener('click', () => {

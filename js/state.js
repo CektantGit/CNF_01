@@ -4,6 +4,7 @@ export class ConfiguratorState {
     this.currentVariantIndex = 0;
     this.currentSlotIndex = -1;
     this.currentStepIndex = 0;
+    this.environment = null;
     const def = this._createVariant('Variant 1');
     this.variants.push(def);
   }
@@ -11,11 +12,10 @@ export class ConfiguratorState {
   get currentVariant() { return this.variants[this.currentVariantIndex]; }
   get steps() { return this.currentVariant.steps; }
   get slots() { return this.currentVariant.slots; }
-  get environment() { return this.currentVariant.environment; }
 
   _createVariant(name) {
     const step = { id: crypto.randomUUID(), name: 'Step 1', index: 0 };
-    return { id: crypto.randomUUID(), name, steps: [step], slots: [], environment: null };
+    return { id: crypto.randomUUID(), name, steps: [step], slots: [] };
   }
 
   addVariant(name = `Variant ${this.variants.length + 1}`) {
@@ -44,22 +44,45 @@ export class ConfiguratorState {
     const def = { id: crypto.randomUUID(), name: 'Step 1', index: 0 };
     v.steps = [def];
     v.slots = [];
-    v.environment = null;
     this.currentSlotIndex = -1;
     this.currentStepIndex = 0;
   }
 
   addSlot(name = 'New slot') {
-    const stepId = this.currentStep ? this.currentStep.id : this.steps[0].id;
-    const slot = {
-      id: crypto.randomUUID(),
-      name,
-      objects: [],
-      selectedObjectIndex: -1,
-      canBeEmpty: false,
-      hidden: false,
-      stepId
-    };
+    let slot;
+    if (this.currentSlot) {
+      const src = this.currentSlot;
+      slot = {
+        id: crypto.randomUUID(),
+        name: src.name,
+        objects: src.objects.map(o => ({
+          uuid: o.uuid,
+          name: o.name,
+          materials: o.materials,
+          selectedMaterial: o.selectedMaterial,
+          transform: {
+            position: [...o.transform.position],
+            rotation: [...o.transform.rotation],
+            scale: [...o.transform.scale]
+          }
+        })),
+        selectedObjectIndex: src.selectedObjectIndex,
+        canBeEmpty: src.canBeEmpty,
+        hidden: src.hidden,
+        stepId: src.stepId
+      };
+    } else {
+      const stepId = this.currentStep ? this.currentStep.id : this.steps[0].id;
+      slot = {
+        id: crypto.randomUUID(),
+        name,
+        objects: [],
+        selectedObjectIndex: -1,
+        canBeEmpty: false,
+        hidden: false,
+        stepId
+      };
+    }
     this.slots.push(slot);
     this.currentSlotIndex = this.slots.length - 1;
     return slot;
@@ -123,10 +146,10 @@ export class ConfiguratorState {
   }
 
   setEnvironment(obj){
-    this.currentVariant.environment = obj;
+    this.environment = obj;
   }
 
-  removeEnvironment(){ this.currentVariant.environment = null; }
+  removeEnvironment(){ this.environment = null; }
 
   get currentStep(){ return this.steps[this.currentStepIndex]; }
 
@@ -147,10 +170,6 @@ export class ConfiguratorState {
           }
           variant.slots.push({id:sid,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,stepId:slotData.step||variant.steps[0].id});
         }
-        if(vdata.environment){
-          const det=await fetchDetails(vdata.environment.uuid);
-          if(det) variant.environment={uuid:vdata.environment.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,transform:{position:vdata.environment.position||[0,0,0],rotation:vdata.environment.rotation||[0,0,0],scale:vdata.environment.scale||[1,1,1]}};
-        }
         this.variants.push(variant);
       }
     } else {
@@ -166,11 +185,13 @@ export class ConfiguratorState {
         }
         variant.slots.push({id,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,stepId:slotData.step||variant.steps[0].id});
       }
-      if(data.environment){
-        const det=await fetchDetails(data.environment.uuid);
-        if(det) variant.environment={uuid:data.environment.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,transform:{position:data.environment.position||[0,0,0],rotation:data.environment.rotation||[0,0,0],scale:data.environment.scale||[1,1,1]}};
-      }
       this.variants.push(variant);
+    }
+    if(data.environment){
+      const det=await fetchDetails(data.environment.uuid);
+      if(det) this.environment={uuid:data.environment.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,transform:{position:data.environment.position||[0,0,0],rotation:data.environment.rotation||[0,0,0],scale:data.environment.scale||[1,1,1]}};
+    } else {
+      this.environment=null;
     }
     this.currentVariantIndex=0;
     this.currentStepIndex=0;
@@ -188,9 +209,10 @@ export class ConfiguratorState {
         slotsOut[slot.id]={name:slot.name,canBeEmpty:slot.canBeEmpty,step:slot.stepId,objects:slot.objects.map(o=>({uuid:o.uuid,position:o.transform.position,rotation:o.transform.rotation,scale:o.transform.scale}))};
       });
       const out={name:variant.name,steps:stepsOut,slots:slotsOut};
-      if(variant.environment){ out.environment={uuid:variant.environment.uuid,position:variant.environment.transform.position,rotation:variant.environment.transform.rotation,scale:variant.environment.transform.scale}; }
       variantsOut[variant.id]=out;
     });
-    return JSON.stringify({version:2,variants:variantsOut},null,2);
+    const out={version:2,variants:variantsOut};
+    if(this.environment){ out.environment={uuid:this.environment.uuid,position:this.environment.transform.position,rotation:this.environment.transform.rotation,scale:this.environment.transform.scale}; }
+    return JSON.stringify(out,null,2);
   }
 }
