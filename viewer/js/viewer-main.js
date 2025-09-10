@@ -27,7 +27,7 @@ const stepControls = document.getElementById('stepControls');
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.LinearToneMapping;
 renderer.physicallyCorrectLights = true;
@@ -39,7 +39,7 @@ controls.update();
 
 const pmrem = new THREE.PMREMGenerator(renderer);
 new RGBELoader().load(
-  'https://raw.githubusercontent.com/donmccurdy/three-gltf-viewer/master/assets/environment/neutral.hdr',
+  'https://github.com/google/model-viewer/raw/refs/heads/master/packages/shared-assets/environments/neutral.hdr',
   (hdr) => {
     const envMap = pmrem.fromEquirectangular(hdr).texture;
     scene.environment = envMap;

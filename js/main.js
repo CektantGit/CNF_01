@@ -59,7 +59,7 @@ outlineBtn.classList.add('active');
 
 // THREE.js setup
 const viewer = document.getElementById('viewer');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(viewer.clientWidth, viewer.clientHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.LinearToneMapping;
@@ -69,7 +69,7 @@ viewer.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
 new RGBELoader().load(
-  'https://raw.githubusercontent.com/donmccurdy/three-gltf-viewer/master/assets/environment/neutral.hdr',
+  'https://github.com/google/model-viewer/raw/refs/heads/master/packages/shared-assets/environments/neutral.hdr',
   (hdr) => {
     const envMap = pmrem.fromEquirectangular(hdr).texture;
     scene.environment = envMap;
