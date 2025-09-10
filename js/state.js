@@ -51,10 +51,11 @@ export class ConfiguratorState {
   removeSlot(id) {
     const idx = this.slots.findIndex(s => s.id === id);
     if (idx !== -1) {
+      const stepId = this.slots[idx].stepId;
       this.slots.splice(idx, 1);
-      if (this.currentSlotIndex >= this.slots.length) {
-        this.currentSlotIndex = this.slots.length - 1;
-      }
+      const stepSlots = this.slots.filter(s => s.stepId === stepId);
+      const target = stepSlots[0] ? this.slots.indexOf(stepSlots[0]) : this.slots[0] ? 0 : -1;
+      this.currentSlotIndex = target;
     }
   }
 
@@ -155,6 +156,6 @@ export class ConfiguratorState {
         }))
       };
     });
-    return JSON.stringify({ steps: stepsOut, slots: slotsOut }, null, 2);
+    return JSON.stringify({ version: 2, steps: stepsOut, slots: slotsOut }, null, 2);
   }
 }

@@ -75,6 +75,7 @@ button.active{background:var(--color-Brand-Main);color:var(--color-White);}
 #gridBtn{position:absolute;bottom:10px;right:10px;}
 #outlineBtn{position:absolute;bottom:10px;right:80px;}
 .hide-btn.active{background:var(--color-Gray-70);color:var(--color-White);}
+#versionLabel{position:fixed;top:4px;right:8px;font-size:12px;color:var(--color-Gray-60);}
 #loadingOverlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:20;}
 #loadingOverlay .loading-box{text-align:center;color:var(--color-White);}
 #loadingOverlay .progress{width:200px;height:8px;background:var(--color-Gray-20);margin-top:10px;border-radius:4px;overflow:hidden;}
