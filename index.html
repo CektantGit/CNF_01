@@ -1,1 +1,115 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Configurator</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+      "OrbitControls": "https://unpkg.com/three@0.165.0/examples/jsm/controls/OrbitControls.js",
+      "GLTFLoader": "https://unpkg.com/three@0.165.0/examples/jsm/loaders/GLTFLoader.js",
+      "RGBELoader": "https://unpkg.com/three@0.165.0/examples/jsm/loaders/RGBELoader.js",
+      "TransformControls": "https://unpkg.com/three@0.165.0/examples/jsm/controls/TransformControls.js",
+      "EffectComposer": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/EffectComposer.js",
+      "RenderPass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/RenderPass.js",
+      "OutlinePass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/OutlinePass.js",
+      "ShaderPass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/ShaderPass.js",
+      "FXAAShader": "https://unpkg.com/three@0.165.0/examples/jsm/shaders/FXAAShader.js",
+      "OutputPass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/OutputPass.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="container">
+    <div id="slotsPanel">
+      <div id="variantControls">
+        <select id="variantSelect"></select>
+        <button id="addVariant" class="action-btn">+</button>
+        <button id="delVariant" class="action-btn">-</button>
+        <button id="renVariant" class="action-btn">Rename</button>
+      </div>
+      <div id="stepControls">
+        <button id="prevStep">Prev</button>
+        <span id="stepName"></span>
+        <button id="nextStep">Next</button>
+        <button id="delStep" class="action-btn">Delete step</button>
+      </div>
+      <button id="addSlotBtn" class="action-btn">Add slot</button>
+      <ul id="slots"></ul>
+      <div id="envRow">
+        <button id="envBtn" class="action-btn">Environment</button>
+        <button id="lockBtn" class="action-btn active">Lock</button>
+      </div>
+    </div>
+    <div id="viewer">
+      <div id="transformBtns">
+        <button id="moveBtn">Move</button>
+        <button id="rotateBtn">Rotate</button>
+        <button id="scaleBtn">Scale</button>
+        <button id="noneBtn">None</button>
+      </div>
+      <div id="coordsPanel">
+        <input type="number" id="coordX" step="0.01" />
+        <input type="number" id="coordY" step="0.01" />
+        <input type="number" id="coordZ" step="0.01" />
+      </div>
+      <div id="bottomBtns">
+        <button id="exportBtn">Export JSON</button>
+        <button id="importBtn">Import JSON</button>
+        <button id="stepsBtn">Steps</button>
+        <input type="file" id="importInput" accept="application/json" style="display:none" />
+      </div>
+      <button id="outlineBtn" class="action-btn">Outline</button>
+      <button id="gridBtn" class="action-btn">Grid</button>
+    </div>
+    <div id="objectsPanel">
+      <div id="objectActions">
+        <button id="addObjectBtn" class="action-btn">Add object</button>
+        <button id="inheritBtn" class="action-btn">Inherit first</button>
+      </div>
+      <label id="canEmptyRow"><input type="checkbox" id="canBeEmpty"> Can be empty</label>
+      <div id="objects"></div>
+    </div>
+  </div>
+  <div id="versionLabel">ver 0.02</div>
+  <div id="objectModal">
+    <div class="modal-box">
+      <div id="modalList"></div>
+      <div class="pagination">
+        <button id="prevPage">Prev</button>
+        <span id="pageInfo"></span>
+        <button id="nextPage">Next</button>
+      </div>
+    </div>
+    <button id="closeModal">Close</button>
+  </div>
+  <div id="stepsModal">
+    <div class="modal-box">
+      <div id="stepsList"></div>
+      <button id="addStep">Add step</button>
+      <button id="saveSteps">Save</button>
+    </div>
+    <button id="closeSteps">Close</button>
+  </div>
+  <div id="envModal">
+    <div class="modal-box">
+      <label>Environment UUID <input type="text" id="envUuid"></label>
+      <button id="loadEnv" class="action-btn">Load</button>
+      <button id="removeEnv" class="action-btn">Remove</button>
+    </div>
+    <button id="closeEnv">Close</button>
+  </div>
+  <div id="loadingOverlay">
+    <div class="loading-box">
+      <p>Loading</p>
+      <div class="progress"><div id="progressBar"></div></div>
+    </div>
+  </div>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
