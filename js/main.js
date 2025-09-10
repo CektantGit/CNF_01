@@ -39,6 +39,7 @@ const stepsModal = document.getElementById('stepsModal');
 const modalEl = document.getElementById('objectModal');
 const moveBtn = document.getElementById('moveBtn');
 const rotateBtn = document.getElementById('rotateBtn');
+const scaleBtn = document.getElementById('scaleBtn');
 const noneBtn = document.getElementById('noneBtn');
 const gridBtn = document.getElementById('gridBtn');
 const outlineBtn = document.getElementById('outlineBtn');
@@ -162,6 +163,10 @@ function updateCoordInputs(){
     coordX.value = THREE.MathUtils.radToDeg(transform.object.rotation.x).toFixed(1);
     coordY.value = THREE.MathUtils.radToDeg(transform.object.rotation.y).toFixed(1);
     coordZ.value = THREE.MathUtils.radToDeg(transform.object.rotation.z).toFixed(1);
+  } else if (transformMode === 'scale') {
+    coordX.value = transform.object.scale.x.toFixed(2);
+    coordY.value = transform.object.scale.y.toFixed(2);
+    coordZ.value = transform.object.scale.z.toFixed(2);
   }
 }
 
@@ -179,6 +184,9 @@ function updateCoordInputs(){
       const rad = THREE.MathUtils.degToRad(val);
       transform.object.rotation[axisNames[idx]] = rad;
       obj.transform.rotation[idx] = val;
+    } else if (transformMode === 'scale') {
+      transform.object.scale[axisNames[idx]] = val;
+      obj.transform.scale[idx] = val;
     }
     updateCoordInputs();
   });
@@ -554,6 +562,7 @@ removeEnvBtn.addEventListener('click',()=>{
 function updateTransformButtons() {
   moveBtn.classList.toggle('active', transformMode === 'translate');
   rotateBtn.classList.toggle('active', transformMode === 'rotate');
+  scaleBtn.classList.toggle('active', transformMode === 'scale');
   noneBtn.classList.toggle('active', transformMode === null);
 }
 
@@ -581,6 +590,7 @@ function setTransformMode(mode) {
 
 moveBtn.addEventListener('click', () => setTransformMode('translate'));
 rotateBtn.addEventListener('click', () => setTransformMode('rotate'));
+scaleBtn.addEventListener('click', () => setTransformMode('scale'));
 noneBtn.addEventListener('click', () => setTransformMode(null));
 
 gridBtn.addEventListener('click', () => {

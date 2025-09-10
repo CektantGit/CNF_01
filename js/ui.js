@@ -7,10 +7,10 @@ export function renderSlots(state, container, { onSelect, onDelete, onToggleHide
     li.addEventListener('click', () => {
       if (state.currentSlotIndex === index) {
         const newName = prompt('Rename slot', slot.name);
-          if (newName) {
-            slot.name = newName;
-            renderSlots(state, container, { onSelect, onDelete, onToggleHide });
-          }
+        if (newName) {
+          slot.name = newName;
+          renderSlots(state, container, { onSelect, onDelete, onToggleHide }, stepId);
+        }
         } else {
           onSelect(index);
         }
