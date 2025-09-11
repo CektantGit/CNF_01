@@ -126,19 +126,17 @@ button:hover {
 .variant-btn{
   border:1px solid var(--color-Borders-Main);
   border-radius:4px;
-  padding:4px 8px;
   background:var(--color-White);
   cursor:pointer;
-  white-space:nowrap;
-}
-.variant-btn.text-option{
-  width:100%;
-  aspect-ratio:1;
+  padding:8px 12px;
   display:flex;
   align-items:center;
   justify-content:center;
   text-align:center;
-  padding:4px;
+}
+.variant-btn.text-option{
+  width:100%;
+  padding:8px 4px;
   white-space:normal;
   word-break:break-word;
 }
