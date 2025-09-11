@@ -33,8 +33,6 @@ export function renderSlots(container, state, onSelect){
         const btn=document.createElement('button');
         btn.className='variant-btn text-option';
         btn.textContent='None';
-        const len=btn.textContent.length;
-        btn.style.fontSize = len>12? '10px' : len>8? '12px' : '14px';
         if(slot.selectedIndex===-1) btn.classList.add('selected');
         btn.addEventListener('click',()=>onSelect(sIdx,-1,0));
         list.appendChild(btn);
@@ -67,8 +65,6 @@ export function renderSlots(container, state, onSelect){
           btn.className='variant-btn text-option';
           if(slot.selectedIndex===oIdx && obj.selectedMaterial===mIdx) btn.classList.add('selected');
           btn.textContent = obj.variationNames?.[mIdx] || mat.name;
-          const len=btn.textContent.length;
-          btn.style.fontSize = len>12? '10px' : len>8? '12px' : '14px';
           const slotIndex = state.slots.indexOf(slot);
           btn.addEventListener('click',()=>onSelect(slotIndex,oIdx,mIdx));
           list.appendChild(btn);
