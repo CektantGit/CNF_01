@@ -4,7 +4,7 @@ export function renderVariants(container, state, onSelect){
     container.style.display='none';
     return;
   }
-  container.style.display='flex';
+  container.style.display='grid';
   state.variants.forEach((v,idx)=>{
     const btn=document.createElement('button');
     btn.className='variant-btn';
