@@ -82,19 +82,24 @@ button:hover {
   border-radius:4px;
 }
 .object-list {
-  display:flex;
-  flex-wrap:wrap;
+  display:grid;
   gap:8px;
   padding:8px 0;
 }
+.object-list.thumb-mode {
+  grid-template-columns:repeat(5,1fr);
+}
+.object-list.text-mode {
+  grid-template-columns:repeat(4,1fr);
+}
 .object-item {
-  width:70px;
+  width:100%;
   text-align:center;
   cursor:pointer;
 }
 .object-item img, .object-item .none-thumb {
-  width:70px;
-  height:70px;
+  width:100%;
+  aspect-ratio:1;
   object-fit:contain;
   background:var(--color-White);
   border:1px solid var(--color-Borders-Main);
@@ -126,6 +131,17 @@ button:hover {
   cursor:pointer;
   white-space:nowrap;
 }
+.variant-btn.text-option{
+  width:100%;
+  aspect-ratio:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:4px;
+  white-space:normal;
+  word-break:break-word;
+}
 .variant-btn.selected{
   background:var(--color-Brand-Main);
   color:var(--color-White);
@@ -142,6 +158,7 @@ button:hover {
   width:100%;
   font-weight:600;
   margin-top:8px;
+  grid-column:1/-1;
 }
 
 /* loading overlay */
