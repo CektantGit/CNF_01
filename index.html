@@ -72,7 +72,11 @@
         <button id="addObjectBtn" class="action-btn">Add object</button>
         <button id="inheritBtn" class="action-btn">Inherit first</button>
       </div>
-      <label id="canEmptyRow"><input type="checkbox" id="canBeEmpty"> Can be empty</label>
+      <div id="slotOptions">
+        <label><input type="checkbox" id="canBeEmpty"> Can be empty</label>
+        <label><input type="checkbox" id="textButtons"> Button text</label>
+        <button id="slotSettings" class="action-btn">Settings</button>
+      </div>
       <div id="objects"></div>
     </div>
   </div>
@@ -103,6 +107,13 @@
       <button id="removeEnv" class="action-btn">Remove</button>
     </div>
     <button id="closeEnv">Close</button>
+  </div>
+  <div id="varModal">
+    <div class="modal-box">
+      <div id="varList"></div>
+      <button id="saveVar" class="action-btn">Save</button>
+    </div>
+    <button id="closeVar">Close</button>
   </div>
   <div id="loadingOverlay">
     <div class="loading-box">

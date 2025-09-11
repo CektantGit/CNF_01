@@ -39,6 +39,7 @@ export class ViewerState{
         id,
         name: slotData.name,
         canBeEmpty: slotData.canBeEmpty,
+        textButtons: slotData.textButtons || false,
         objects: [],
         selectedIndex: slotData.canBeEmpty ? -1 : 0,
         open:false,
@@ -54,6 +55,7 @@ export class ViewerState{
           name: details.name,
           materials: details.materials || [],
           selectedMaterial:0,
+          variationNames: obj.variationNames || (details.materials||[]).map(m=>m.name),
           transform: {
             position: obj.position || [0,0,0],
             rotation: obj.rotation || [0,0,0],

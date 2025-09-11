@@ -33,6 +33,7 @@ export class ConfiguratorState {
         name: o.name,
         materials: o.materials,
         selectedMaterial: o.selectedMaterial,
+        variationNames: [...(o.variationNames || o.materials.map(m=>m.name))],
         transform: {
           position: [...o.transform.position],
           rotation: [...o.transform.rotation],
@@ -42,6 +43,7 @@ export class ConfiguratorState {
       selectedObjectIndex: s.selectedObjectIndex,
       canBeEmpty: s.canBeEmpty,
       hidden: s.hidden,
+      textButtons: s.textButtons || false,
       stepId: stepMap.get(s.stepId) || steps[0].id
     }));
     return { id: crypto.randomUUID(), name, steps, slots };
@@ -90,6 +92,7 @@ export class ConfiguratorState {
           name: o.name,
           materials: o.materials,
           selectedMaterial: o.selectedMaterial,
+          variationNames: [...(o.variationNames || o.materials.map(m=>m.name))],
           transform: {
             position: [...o.transform.position],
             rotation: [...o.transform.rotation],
@@ -99,6 +102,7 @@ export class ConfiguratorState {
         selectedObjectIndex: src.selectedObjectIndex,
         canBeEmpty: src.canBeEmpty,
         hidden: src.hidden,
+        textButtons: src.textButtons || false,
         stepId: src.stepId
       };
     } else {
@@ -110,6 +114,7 @@ export class ConfiguratorState {
         selectedObjectIndex: -1,
         canBeEmpty: false,
         hidden: false,
+        textButtons: false,
         stepId
       };
     }
@@ -118,7 +123,7 @@ export class ConfiguratorState {
     return slot;
   }
 
-  addSlotFromData(id, name, objects = [], canBeEmpty = false, stepId = this.steps[0].id) {
+  addSlotFromData(id, name, objects = [], canBeEmpty = false, stepId = this.steps[0].id, textButtons = false) {
     const slot = {
       id,
       name,
@@ -126,6 +131,7 @@ export class ConfiguratorState {
       selectedObjectIndex: objects.length ? 0 : -1,
       canBeEmpty,
       hidden: false,
+      textButtons,
       stepId
     };
     this.slots.push(slot);
@@ -153,6 +159,7 @@ export class ConfiguratorState {
       name: objectData.name,
       materials: objectData.materials || [],
       selectedMaterial: 0,
+      variationNames: (objectData.materials || []).map(m=>m.name),
       transform: { position: [0,0,0], rotation:[0,0,0], scale:[1,1,1] }
     };
     this.currentSlot.objects.push(obj);
@@ -195,11 +202,11 @@ export class ConfiguratorState {
         for(const [sid,slotData] of Object.entries(vdata.slots||{})){
           const objects=[];
           for(const objData of slotData.objects||[]){
-            const det=await fetchDetails(objData.uuid); if(!det) continue;
-            objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
-          }
-          variant.slots.push({id:sid,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,stepId:slotData.step||variant.steps[0].id});
-        }
+      const det=await fetchDetails(objData.uuid); if(!det) continue;
+      objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,variationNames:objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
+    }
+    variant.slots.push({id:sid,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,stepId:slotData.step||variant.steps[0].id});
+      }
         this.variants.push(variant);
       }
     } else {
@@ -210,10 +217,10 @@ export class ConfiguratorState {
       for(const [id,slotData] of Object.entries(data.slots||{})){
         const objects=[];
         for(const objData of slotData.objects||[]){
-          const det=await fetchDetails(objData.uuid); if(!det) continue;
-          objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
-        }
-        variant.slots.push({id,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,stepId:slotData.step||variant.steps[0].id});
+      const det=await fetchDetails(objData.uuid); if(!det) continue;
+      objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,variationNames:objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
+    }
+        variant.slots.push({id,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,stepId:slotData.step||variant.steps[0].id});
       }
       this.variants.push(variant);
     }
@@ -236,7 +243,7 @@ export class ConfiguratorState {
       variant.steps.forEach(step=>{stepsOut[step.id]={name:step.name,index:step.index};});
       const slotsOut={};
       variant.slots.forEach(slot=>{
-        slotsOut[slot.id]={name:slot.name,canBeEmpty:slot.canBeEmpty,step:slot.stepId,objects:slot.objects.map(o=>({uuid:o.uuid,position:o.transform.position,rotation:o.transform.rotation,scale:o.transform.scale}))};
+        slotsOut[slot.id]={name:slot.name,canBeEmpty:slot.canBeEmpty,textButtons:slot.textButtons,step:slot.stepId,objects:slot.objects.map(o=>({uuid:o.uuid,position:o.transform.position,rotation:o.transform.rotation,scale:o.transform.scale,variationNames:o.variationNames}))};
       });
       const out={name:variant.name,steps:stepsOut,slots:slotsOut};
       variantsOut[variant.id]=out;

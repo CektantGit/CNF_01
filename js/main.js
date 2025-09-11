@@ -31,6 +31,8 @@ const addObjectBtn = document.getElementById('addObjectBtn');
 const inheritBtn = document.getElementById('inheritBtn');
 const objectsContainer = document.getElementById('objects');
 const canBeEmptyChk = document.getElementById('canBeEmpty');
+const textButtonsChk = document.getElementById('textButtons');
+const slotSettingsBtn = document.getElementById('slotSettings');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
@@ -56,6 +58,10 @@ const envUuidInput = document.getElementById('envUuid');
 const loadEnvBtn = document.getElementById('loadEnv');
 const removeEnvBtn = document.getElementById('removeEnv');
 const closeEnvBtn = document.getElementById('closeEnv');
+const varModal = document.getElementById('varModal');
+const varList = document.getElementById('varList');
+const saveVarBtn = document.getElementById('saveVar');
+const closeVarBtn = document.getElementById('closeVar');
 outlineBtn.classList.add('active');
 
 // THREE.js setup
@@ -655,9 +661,55 @@ inheritBtn.addEventListener('click', () => {
   if (slot) loadSlot(slot, true);
 });
 
+function renderVarModal(slot){
+  varList.innerHTML='';
+  slot.objects.forEach((obj,oIdx)=>{
+    obj.materials.forEach((mat,mIdx)=>{
+      const row=document.createElement('div');
+      row.className='var-row';
+      const label=document.createElement('label');
+      label.textContent=`${obj.name} - ${mat.name}`;
+      const input=document.createElement('input');
+      input.type='text';
+      input.value=obj.variationNames?.[mIdx] || `${obj.name} ${mat.name}`;
+      input.dataset.idx=`${oIdx}-${mIdx}`;
+      row.appendChild(label);
+      row.appendChild(input);
+      varList.appendChild(row);
+    });
+  });
+}
+
 canBeEmptyChk.addEventListener('change', () => {
   const slot = state.currentSlot;
   if (slot) slot.canBeEmpty = canBeEmptyChk.checked;
+});
+
+textButtonsChk.addEventListener('change', () => {
+  const slot = state.currentSlot;
+  if (slot) slot.textButtons = textButtonsChk.checked;
+});
+
+slotSettingsBtn.addEventListener('click', () => {
+  const slot = state.currentSlot;
+  if (!slot) return;
+  renderVarModal(slot);
+  varModal.style.display = 'block';
+});
+
+closeVarBtn.addEventListener('click', () => {
+  varModal.style.display = 'none';
+});
+
+saveVarBtn.addEventListener('click', () => {
+  const slot = state.currentSlot;
+  if (!slot) { varModal.style.display = 'none'; return; }
+  varList.querySelectorAll('input').forEach(inp => {
+    const [oIdx, mIdx] = inp.dataset.idx.split('-').map(Number);
+    if (!slot.objects[oIdx].variationNames) slot.objects[oIdx].variationNames = [];
+    slot.objects[oIdx].variationNames[mIdx] = inp.value;
+  });
+  varModal.style.display = 'none';
 });
 
 async function handleImport(data) {
@@ -667,6 +719,7 @@ async function handleImport(data) {
   renderVariants();
   renderUI();
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
+  textButtonsChk.checked = state.currentSlot?.textButtons || false;
   reloadScene();
 }
 
@@ -692,10 +745,12 @@ function renderUI(){
     renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
   }
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
+  textButtonsChk.checked = state.currentSlot?.textButtons || false;
 }
 
 renderUI();
 canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
+textButtonsChk.checked = state.currentSlot?.textButtons || false;
 activateSlot(state.currentSlot);
 updateTransformButtons();
 reloadScene();

@@ -118,6 +118,19 @@ button:hover {
   color:var(--color-Gray-70);
 }
 
+.variant-btn{
+  border:1px solid var(--color-Borders-Main);
+  border-radius:4px;
+  padding:4px 8px;
+  background:var(--color-White);
+  cursor:pointer;
+  white-space:nowrap;
+}
+.variant-btn.selected{
+  background:var(--color-Brand-Main);
+  color:var(--color-White);
+}
+
 .object-label{
   width:100%;
   font-weight:600;
