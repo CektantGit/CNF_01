@@ -32,9 +32,9 @@ canvas{display:block;}
 #slotOptions label{display:flex;align-items:center;gap:4px;}
 #objectModal{position:fixed;top:10%;left:50%;transform:translateX(-50%);display:none;z-index:10;}
 #objectModal .modal-box{background:var(--color-White);border:1px solid var(--color-Borders-Main);width:60vw;max-height:80vh;padding:20px;overflow:auto;position:relative;}
-#modalList{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;max-height:60vh;overflow:auto;}
+#modalList{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-height:60vh;overflow:auto;}
 #objectModal .modal-card{display:flex;flex-direction:column;gap:8px;cursor:pointer;}
-#objectModal .modal-card .thumb{position:relative;width:100%;padding-top:70%;border-radius:6px;overflow:hidden;background:var(--color-White);}
+#objectModal .modal-card .thumb{position:relative;width:100%;aspect-ratio:10/7;border-radius:6px;overflow:hidden;background:var(--color-White);}
 #objectModal .modal-card .thumb img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;}
 #objectModal .modal-card .overlay{position:absolute;inset:0;pointer-events:none;background:rgba(0,0,0,0.06);}
 #objectModal .modal-card .overlay::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;background:linear-gradient(180deg,rgba(0,0,0,0.1) 65.38%,rgba(2,2,2,0.6) 100%);}
