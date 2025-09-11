@@ -11,11 +11,12 @@ import { ShaderPass } from 'ShaderPass';
 import { FXAAShader } from 'FXAAShader';
 import { OutputPass } from 'OutputPass';
 import { ViewerState } from './viewer-state.js';
-import { renderSlots } from './viewer-ui.js';
+import { renderSlots, renderVariants } from './viewer-ui.js';
 import { fetchObjectDetails } from './viewer-api.js';
 
 const container = document.getElementById('viewerCanvas');
 const slotPanel = document.getElementById('slotPanel');
+const variantBar = document.getElementById('variantBar');
 const slotsContainer = document.getElementById('slotsContainer');
 const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
@@ -103,6 +104,7 @@ let hovered = null;
 let envMesh = null;
 
 function renderUI(){
+  renderVariants(variantBar, state, selectVariant);
   if(state.currentStep){
     const name = state.currentStep.name || `Step ${state.currentStepIndex + 1}`;
     stepNameEl.textContent = name;
@@ -279,6 +281,16 @@ async function loadAll(){
   }
   hideLoading();
   renderUI();
+}
+
+async function selectVariant(idx){
+  if(idx===state.currentVariantIndex) return;
+  state.slots.forEach(s=>{
+    if(s.currentMesh){scene.remove(s.currentMesh); s.currentMesh=null;}
+  });
+  setHovered(null);
+  state.setVariant(idx);
+  await loadAll();
 }
 
 function handleHover(event) {

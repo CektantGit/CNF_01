@@ -1,3 +1,20 @@
+export function renderVariants(container, state, onSelect){
+  container.innerHTML='';
+  if(state.variants.length<=1){
+    container.style.display='none';
+    return;
+  }
+  container.style.display='flex';
+  state.variants.forEach((v,idx)=>{
+    const btn=document.createElement('button');
+    btn.className='variant-btn';
+    btn.textContent=v.name;
+    if(state.currentVariantIndex===idx) btn.classList.add('selected');
+    btn.addEventListener('click',()=>onSelect(idx));
+    container.appendChild(btn);
+  });
+}
+
 export function renderSlots(container, state, onSelect){
   container.innerHTML='';
   const stepId = state.currentStep?.id;

@@ -131,6 +131,13 @@ button:hover {
   color:var(--color-White);
 }
 
+#variantBar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  margin-bottom:8px;
+}
+
 .object-label{
   width:100%;
   font-weight:600;

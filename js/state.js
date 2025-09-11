@@ -81,43 +81,17 @@ export class ConfiguratorState {
   }
 
   addSlot(name = 'New slot') {
-    let slot;
-    if (this.currentSlot) {
-      const src = this.currentSlot;
-      slot = {
-        id: crypto.randomUUID(),
-        name: src.name,
-        objects: src.objects.map(o => ({
-          uuid: o.uuid,
-          name: o.name,
-          materials: o.materials,
-          selectedMaterial: o.selectedMaterial,
-          variationNames: [...(o.variationNames || o.materials.map(m=>m.name))],
-          transform: {
-            position: [...o.transform.position],
-            rotation: [...o.transform.rotation],
-            scale: [...o.transform.scale]
-          }
-        })),
-        selectedObjectIndex: src.selectedObjectIndex,
-        canBeEmpty: src.canBeEmpty,
-        hidden: src.hidden,
-        textButtons: src.textButtons || false,
-        stepId: src.stepId
-      };
-    } else {
-      const stepId = this.currentStep ? this.currentStep.id : this.steps[0].id;
-      slot = {
-        id: crypto.randomUUID(),
-        name,
-        objects: [],
-        selectedObjectIndex: -1,
-        canBeEmpty: false,
-        hidden: false,
-        textButtons: false,
-        stepId
-      };
-    }
+    const stepId = this.currentStep ? this.currentStep.id : this.steps[0].id;
+    const slot = {
+      id: crypto.randomUUID(),
+      name,
+      objects: [],
+      selectedObjectIndex: -1,
+      canBeEmpty: false,
+      hidden: false,
+      textButtons: false,
+      stepId
+    };
     this.slots.push(slot);
     this.currentSlotIndex = this.slots.length - 1;
     return slot;
