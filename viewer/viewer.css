@@ -111,8 +111,13 @@ button:hover {
 }
 .object-item .label {
   margin-top:4px;
-  font-size:clamp(10px,1.8vw,12px);
-  white-space:nowrap;
+  font-size:clamp(12px,2vw,14px);
+  line-height:1.2;
+  white-space:normal;
+  word-break:break-word;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
   overflow:hidden;
   text-overflow:ellipsis;
 }
@@ -133,7 +138,7 @@ button:hover {
   background:var(--color-White);
   cursor:pointer;
   padding:9px 12px;
-  font-size:clamp(12px,2vw,15px);
+  font-size:clamp(12px,2vw,14px);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -144,6 +149,12 @@ button:hover {
   padding:9px 4px;
   white-space:normal;
   word-break:break-word;
+  line-height:1.2;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .variant-btn.selected{
   background:var(--color-Brand-Main);
