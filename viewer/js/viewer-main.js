@@ -116,20 +116,24 @@ function applyViewPoint(){
   );
   offset.applyEuler(euler);
   camera.position.set(vp.position[0]+offset.x, vp.position[1]+offset.y, vp.position[2]+offset.z);
+  const sph = new THREE.Spherical().setFromVector3(offset);
+  const basePolar = sph.phi;
+  const baseAzimuth = sph.theta;
   if(vp.vertical>0){
-    controls.minPolarAngle=0;
-    controls.maxPolarAngle=THREE.MathUtils.degToRad(vp.vertical);
+    const r = THREE.MathUtils.degToRad(vp.vertical)/2;
+    controls.minPolarAngle = Math.max(0, basePolar - r);
+    controls.maxPolarAngle = Math.min(Math.PI, basePolar + r);
   } else {
-    controls.minPolarAngle=0;
-    controls.maxPolarAngle=Math.PI;
+    controls.minPolarAngle = 0;
+    controls.maxPolarAngle = Math.PI;
   }
   if(vp.horizontal>0){
-    const r=THREE.MathUtils.degToRad(vp.horizontal);
-    controls.minAzimuthAngle=-r;
-    controls.maxAzimuthAngle=r;
+    const r = THREE.MathUtils.degToRad(vp.horizontal)/2;
+    controls.minAzimuthAngle = baseAzimuth - r;
+    controls.maxAzimuthAngle = baseAzimuth + r;
   } else {
-    controls.minAzimuthAngle=-Infinity;
-    controls.maxAzimuthAngle=Infinity;
+    controls.minAzimuthAngle = -Infinity;
+    controls.maxAzimuthAngle = Infinity;
   }
   controls.maxDistance = vp.maxDistance>0?vp.maxDistance:Infinity;
   controls.enablePan = vp.allowMovement;

@@ -171,12 +171,21 @@ function applyViewPreview(){
     vp.position[1] + offset.y,
     vp.position[2] + offset.z
   );
-  orbit.minPolarAngle = 0;
-  orbit.maxPolarAngle = vp.vertical > 0 ? THREE.MathUtils.degToRad(vp.vertical) : Math.PI;
+  const sph = new THREE.Spherical().setFromVector3(offset);
+  const basePolar = sph.phi;
+  const baseAzimuth = sph.theta;
+  if(vp.vertical>0){
+    const r = THREE.MathUtils.degToRad(vp.vertical)/2;
+    orbit.minPolarAngle = Math.max(0, basePolar - r);
+    orbit.maxPolarAngle = Math.min(Math.PI, basePolar + r);
+  }else{
+    orbit.minPolarAngle = 0;
+    orbit.maxPolarAngle = Math.PI;
+  }
   if(vp.horizontal>0){
-    const r = THREE.MathUtils.degToRad(vp.horizontal);
-    orbit.minAzimuthAngle = -r;
-    orbit.maxAzimuthAngle = r;
+    const r = THREE.MathUtils.degToRad(vp.horizontal)/2;
+    orbit.minAzimuthAngle = baseAzimuth - r;
+    orbit.maxAzimuthAngle = baseAzimuth + r;
   }else{
     orbit.minAzimuthAngle = -Infinity;
     orbit.maxAzimuthAngle = Infinity;

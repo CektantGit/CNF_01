@@ -70,6 +70,8 @@ canvas{display:block;}
 #closeVar{display:block;margin:10px auto 0;}
 #viewModal{position:fixed;top:20%;left:50%;transform:translateX(-50%);display:none;z-index:10;}
 #viewModal .modal-box{background:var(--color-White);border:1px solid var(--color-Borders-Main);padding:20px;}
+#viewModal .modal-box label{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+#viewModal .modal-box label input{margin-left:8px;}
 #closeView{display:block;margin:10px auto 0;}
 .obj-card{border:1px solid var(--color-Borders-Main);padding:5px;margin-bottom:5px;border-radius:4px;}
 .obj-card.selected{background:var(--color-Gray-20);}
