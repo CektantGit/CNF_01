@@ -406,17 +406,36 @@ arBtn.addEventListener('click', async () => {
 function encodeConfig(){
   let str='';
   state.slots.forEach(slot=>{
-    const idx=slot.selectedIndex<0?0:slot.selectedIndex;
-    str+=String.fromCharCode(65+idx);
+    let sel=0, idx=0;
+    if(slot.canBeEmpty){
+      if(slot.selectedIndex<0) sel=0;
+      else idx=1;
+    }
+    slot.objects.forEach((obj,oIdx)=>{
+      obj.materials.forEach((mat,mIdx)=>{
+        if(slot.selectedIndex===oIdx && (obj.selectedMaterial||0)===mIdx) sel=idx;
+        idx++;
+      });
+    });
+    str+=String.fromCharCode(65+sel);
   });
   return str;
 }
 
 function applyEncodedConfig(str){
   for(let i=0;i<state.slots.length && i<str.length;i++){
-    const idx=str.charCodeAt(i)-65;
-    if(idx>=0 && idx<state.slots[i].objects.length){
-      state.slots[i].selectedIndex=idx;
+    let idx=str.charCodeAt(i)-65;
+    const slot=state.slots[i];
+    if(slot.canBeEmpty){
+      if(idx===0){ slot.selectedIndex=-1; continue; }
+      idx--;
+    }
+    outer: for(let o=0;o<slot.objects.length;o++){
+      const obj=slot.objects[o];
+      for(let m=0;m<obj.materials.length;m++){
+        if(idx===0){ slot.selectedIndex=o; obj.selectedMaterial=m; break outer; }
+        idx--;
+      }
     }
   }
 }
