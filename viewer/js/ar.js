@@ -108,45 +108,42 @@ export async function viewInAR(scene) {
   const glbBuffer = await exporter.parseAsync(exportScene, { binary: true });
   const glbBlob = new Blob([glbBuffer], { type: 'model/gltf-binary' });
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isAndroid = /Android/.test(navigator.userAgent);
-  if (isIOS) {
-    const usdzExporter = new USDZExporter();
-    const arraybuffer = await usdzExporter.parseAsync(exportScene);
-    if (arraybuffer) {
-      const usdzFile = new File([arraybuffer], 'scene.usdz', {
-        type: 'model/vnd.usdz+zip'
-      });
-      const link = document.createElement('a');
-      link.rel = 'ar';
-      link.href = URL.createObjectURL(usdzFile);
-      link.click();
-    } else {
-      console.error('USDZExporter returned null.');
-    }
+  const modelViewer = document.getElementById('ar-viewer');
+  if (!modelViewer) {
+    console.error('AR viewer element not found');
     return;
   }
 
-  if (isAndroid) {
-    const modelViewer = document.getElementById('ar-viewer');
-    if (!modelViewer) {
-      console.error('AR viewer element not found');
-      return;
-    }
-    const glbUrl = URL.createObjectURL(glbBlob);
-    modelViewer.setAttribute('src', glbUrl);
+  const glbUrl = URL.createObjectURL(glbBlob);
+  modelViewer.setAttribute('src', glbUrl);
 
-    // Wait for the model to finish loading before triggering AR.
-    await modelViewer.updateComplete;
+  // On iOS the <model-viewer> component expects an ios-src pointing to a USDZ
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+    try {
+      const usdzExporter = new USDZExporter();
+      const arraybuffer = await usdzExporter.parseAsync(exportScene);
+      if (arraybuffer) {
+        const usdzFile = new File([arraybuffer], 'scene.usdz', {
+          type: 'model/vnd.usdz+zip'
+        });
+        const usdzUrl = URL.createObjectURL(usdzFile);
+        modelViewer.setAttribute('ios-src', usdzUrl);
+      }
+    } catch (err) {
+      console.error('USDZ export failed', err);
+    }
+  }
+
+  await modelViewer.updateComplete;
+
+  if (modelViewer.canActivateAR && modelViewer.canActivateAR()) {
     modelViewer.activateAR();
   } else {
-    const glbUrl = URL.createObjectURL(glbBlob);
     const link = document.createElement('a');
     link.href = glbUrl;
     link.download = 'scene.glb';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(glbUrl);
   }
 }
