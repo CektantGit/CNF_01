@@ -109,6 +109,7 @@ export async function viewInAR(scene) {
   const glbBlob = new Blob([glbBuffer], { type: 'model/gltf-binary' });
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isAndroid = /Android/.test(navigator.userAgent);
   if (isIOS) {
     const usdzExporter = new USDZExporter();
     const arraybuffer = await usdzExporter.parseAsync(exportScene);
@@ -126,15 +127,26 @@ export async function viewInAR(scene) {
     return;
   }
 
-  const modelViewer = document.getElementById('ar-viewer');
-  if (!modelViewer) {
-    console.error('AR viewer element not found');
-    return;
-  }
-  const glbUrl = URL.createObjectURL(glbBlob);
-  modelViewer.setAttribute('src', glbUrl);
+  if (isAndroid) {
+    const modelViewer = document.getElementById('ar-viewer');
+    if (!modelViewer) {
+      console.error('AR viewer element not found');
+      return;
+    }
+    const glbUrl = URL.createObjectURL(glbBlob);
+    modelViewer.setAttribute('src', glbUrl);
 
-  // Wait for the model to finish loading before triggering AR.
-  await modelViewer.updateComplete;
-  modelViewer.activateAR();
+    // Wait for the model to finish loading before triggering AR.
+    await modelViewer.updateComplete;
+    modelViewer.activateAR();
+  } else {
+    const glbUrl = URL.createObjectURL(glbBlob);
+    const link = document.createElement('a');
+    link.href = glbUrl;
+    link.download = 'scene.glb';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(glbUrl);
+  }
 }
