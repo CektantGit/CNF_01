@@ -105,7 +105,7 @@ let pointerDown = null;
 let pointerMoved = false;
 let hovered = null;
 let envMesh = null;
-const baseOutlines = [];
+let envEdges = null;
 function applyViewPoint(){
   const vp = state.viewPoint;
   if(!vp.enabled){ resetViewPoint(); return; }
@@ -288,14 +288,16 @@ async function selectObject(slotIdx, objIdx, matIdx) {
 function setHovered(obj) {
   if (hovered === obj) return;
   hovered = obj;
-  outlinePass.selectedObjects = baseOutlines.concat(obj ? [obj] : []);
+  outlinePass.selectedObjects = obj ? [obj] : [];
 }
 
 async function loadAll(){
   if(envMesh){
     scene.remove(envMesh); envMesh=null;
   }
-  baseOutlines.length = 0;
+  if(envEdges){
+    scene.remove(envEdges); envEdges=null;
+  }
   state.slots.forEach(s=>{
     if(s.currentMesh){ scene.remove(s.currentMesh); s.currentMesh=null; }
   });
@@ -319,7 +321,21 @@ async function loadAll(){
       envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
       envMesh.scale.fromArray(state.environment.transform.scale);
       scene.add(envMesh);
-      baseOutlines.push(envMesh);
+      envMesh.updateWorldMatrix(true, true);
+      envEdges = new THREE.Group();
+      envMesh.traverse((child) => {
+        if (child.isMesh) {
+          const edgeGeo = new THREE.EdgesGeometry(child.geometry);
+          const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000 });
+          edgeMat.depthTest = true;
+          edgeMat.depthWrite = false;
+          const lines = new THREE.LineSegments(edgeGeo, edgeMat);
+          lines.applyMatrix4(child.matrixWorld);
+          lines.userData.noExport = true;
+          envEdges.add(lines);
+        }
+      });
+      scene.add(envEdges);
       setHovered(hovered);
     }
   } else {
