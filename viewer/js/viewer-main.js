@@ -65,7 +65,7 @@ const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 const outlinePass = new OutlinePass(new THREE.Vector2(1, 1), scene, camera);
 outlinePass.edgeStrength = 3;
-outlinePass.visibleEdgeColor.set(0x008efa);
+outlinePass.visibleEdgeColor.set(0x888888);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 // ensure the outline blends normally over the scene
 outlinePass.overlayMaterial.blending = THREE.NormalBlending;
@@ -320,7 +320,8 @@ async function loadAll(){
           ch.material = dm;
         }
       });
-      envDepthMesh.scale.multiplyScalar(1.001);
+      envDepthMesh.scale.x *= 1.001;
+      envDepthMesh.renderOrder = -1;
       envDepthMesh.userData.noExport = true;
       envMesh.traverse(ch=>{
         if(ch.isMesh){
