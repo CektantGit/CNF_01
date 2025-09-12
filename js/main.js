@@ -35,8 +35,6 @@ const slotOptionsRow = document.getElementById('slotOptions');
 const canBeEmptyChk = document.getElementById('canBeEmpty');
 const textButtonsChk = document.getElementById('textButtons');
 const slotSettingsBtn = document.getElementById('slotSettings');
-const viewActions = document.getElementById('viewActions');
-const viewSettingsBtn = document.getElementById('viewSettings');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
@@ -230,13 +228,11 @@ function updatePanels(){
   if(state.currentSlotIndex===-1){
     objectActionsRow.style.display='none';
     slotOptionsRow.style.display='none';
-    viewActions.style.display='block';
     viewBtn.style.display='inline-block';
     objectsContainer.innerHTML='';
   }else{
     objectActionsRow.style.display='flex';
     slotOptionsRow.style.display='flex';
-    viewActions.style.display='none';
     viewBtn.style.display='none';
   }
 }
@@ -669,7 +665,6 @@ viewBtn.addEventListener('click', () => {
   viewMove.checked = state.viewPoint.allowMovement;
   viewModal.style.display='block';
 });
-viewSettingsBtn.addEventListener('click', ()=>viewBtn.click());
 saveViewBtn.addEventListener('click', ()=>{
   state.viewPoint.vertical = parseFloat(viewVert.value)||0;
   state.viewPoint.horizontal = parseFloat(viewHoriz.value)||0;
