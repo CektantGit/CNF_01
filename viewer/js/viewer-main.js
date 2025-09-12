@@ -308,6 +308,12 @@ async function loadAll(){
             map:m.map, aoMap:m.aoMap, aoMapIntensity:m.aoMapIntensity,
             color:m.color?.clone(), transparent:m.transparent, opacity:m.opacity, side:m.side
           });
+          const edges=new THREE.EdgesGeometry(ch.geometry);
+          const line=new THREE.LineSegments(edges,new THREE.LineBasicMaterial({color:0x000000}));
+          line.material.depthTest=false;
+          line.material.depthWrite=false;
+          line.renderOrder=1;
+          ch.add(line);
         }
       });
       envMesh.position.fromArray(state.environment.transform.position);
