@@ -316,6 +316,7 @@ async function loadAll(){
         }
       });
       envMesh.position.fromArray(state.environment.transform.position);
+      envMesh.position.z += 0.05;
       envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
       envMesh.scale.fromArray(state.environment.transform.scale);
       // build static outline slightly wider on X and thinner on Z
@@ -330,7 +331,7 @@ async function loadAll(){
           envOutline.add(line);
         }
       });
-      envOutline.scale.x *= 1.02;
+      envOutline.scale.x *= 1.01;
       envOutline.scale.z *= 0.9;
       envMesh.add(envOutline);
       scene.add(envMesh);

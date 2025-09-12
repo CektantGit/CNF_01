@@ -354,6 +354,7 @@ function loadEnvironment(env){
       }
     });
     envMesh.position.fromArray(env.transform.position);
+    envMesh.position.z += 0.05;
     envMesh.rotation.set(
       THREE.MathUtils.degToRad(env.transform.rotation[0]),
       THREE.MathUtils.degToRad(env.transform.rotation[1]),
@@ -373,7 +374,7 @@ function loadEnvironment(env){
         envOutline.add(line);
       }
     });
-    envOutline.scale.x *= 1.02;
+    envOutline.scale.x *= 1.01;
     envOutline.scale.z *= 0.9;
     envMesh.add(envOutline);
     scene.add(envMesh);
