@@ -16,6 +16,7 @@ export async function viewInAR(scene) {
       if (m.isMeshStandardMaterial) {
         const mat = m.clone();
         mat.side = THREE.FrontSide;
+        mat.envMap = null;
         return mat;
       }
       const params = { color: m.color };
@@ -25,6 +26,7 @@ export async function viewInAR(scene) {
       if (m.metalnessMap) params.metalnessMap = m.metalnessMap;
       const mat = new THREE.MeshStandardMaterial(params);
       mat.side = THREE.FrontSide;
+      mat.envMap = null;
       return mat;
     };
 

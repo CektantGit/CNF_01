@@ -358,12 +358,22 @@ nextStepBtn.addEventListener('click',()=>{
   renderUI();
 });
 
-arBtn.addEventListener('click', async () => {
-  let removedEnv = false;
-  if (envMesh) {
-    scene.remove(envMesh);
-    removedEnv = true;
-  }
-  await viewInAR(scene);
-  if (removedEnv && envMesh) scene.add(envMesh);
+arBtn.addEventListener('click', () => {
+  viewInAR(scene);
 });
+
+(async () => {
+  try {
+    const res = await fetch('default-config.json');
+    const data = await res.json();
+    await state.loadConfig(data, fetchObjectDetails);
+    await loadAll();
+    if (state.viewPoint.enabled) {
+      applyViewPoint();
+    } else {
+      resetViewPoint();
+    }
+  } catch (err) {
+    console.error('Default config load failed', err);
+  }
+})();

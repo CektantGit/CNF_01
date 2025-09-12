@@ -1,0 +1,130 @@
+{
+  "version": 2,
+  "variants": {
+    "8c7dd03e-5197-4805-a46a-255817d1387e": {
+      "name": "Fireplace",
+      "steps": {
+        "0cf6024c-209d-46b8-ba8f-9af420a89707": {
+          "name": "Step 1",
+          "index": 0
+        }
+      },
+      "slots": {
+        "0999c058-f430-495b-b517-d0cf4df5c6e7": {
+          "name": "Interior",
+          "canBeEmpty": false,
+          "textButtons": false,
+          "step": "0cf6024c-209d-46b8-ba8f-9af420a89707",
+          "objects": [
+            {
+              "uuid": "1a151867-b9dc-49e7-84a6-a12a9f9288d8",
+              "position": [0, 0, 0],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "colorNames": ["Matte Black", "Glossy Black", "Brick"]
+            }
+          ]
+        },
+        "a7c43ed0-9be2-4e25-b9bd-63ba56999893": {
+          "name": "Base",
+          "canBeEmpty": false,
+          "textButtons": false,
+          "step": "0cf6024c-209d-46b8-ba8f-9af420a89707",
+          "objects": [
+            {
+              "uuid": "79429d37-dc1f-45c7-9704-97fa8bafe63f",
+              "position": [0, 0, 0],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "colorNames": ["Black"]
+            }
+          ]
+        },
+        "c75f9ec6-27f6-43ad-aee8-055201225fa7": {
+          "name": "Logs",
+          "canBeEmpty": false,
+          "textButtons": false,
+          "step": "0cf6024c-209d-46b8-ba8f-9af420a89707",
+          "objects": [
+            {
+              "uuid": "074a86df-cd74-41c9-a17e-e4fc867d75bc",
+              "position": [0, 0, 0],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "colorNames": ["Logs 1", "Logs 2", "Logs 3"]
+            },
+            {
+              "uuid": "304fac6d-8128-48f6-bd45-4c69ce453eeb",
+              "position": [0, 0, 0],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "colorNames": ["Logs 4"]
+            }
+          ]
+        },
+        "dee095f1-4f11-4722-b355-d41372f4e611": {
+          "name": "Plate",
+          "canBeEmpty": false,
+          "textButtons": false,
+          "step": "0cf6024c-209d-46b8-ba8f-9af420a89707",
+          "objects": [
+            {
+              "uuid": "c39d4813-b46f-4f74-9557-ef544dcef48f",
+              "position": [0, 0, 0],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "colorNames": ["Plate 1"]
+            },
+            {
+              "uuid": "3d87ec44-e2d3-46cb-8664-d604871489be",
+              "position": [0, 0, 0],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "colorNames": ["Plate 2"]
+            },
+            {
+              "uuid": "d5b1fc06-7617-46e8-9ac6-a28f26b63406",
+              "position": [0, 0, 0],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "colorNames": ["Plate 3"]
+            }
+          ]
+        },
+        "1fd0260a-4236-47d5-9cb9-790ce96ff274": {
+          "name": "Glass",
+          "canBeEmpty": false,
+          "textButtons": false,
+          "step": "0cf6024c-209d-46b8-ba8f-9af420a89707",
+          "objects": [
+            {
+              "uuid": "aa2cc29f-00b9-422e-9a8c-3ee81b483538",
+              "position": [0, 0, 0],
+              "rotation": [0, 0, 0],
+              "scale": [1, 1, 1],
+              "colorNames": ["Glass"]
+            }
+          ]
+        }
+      },
+      "viewPoint": {
+        "position": [-0.045854944300355416, 1.0932244192847875, -0.1969491776390001],
+        "rotation": [0, 0, 0],
+        "left": 15,
+        "right": 30,
+        "down": 25,
+        "up": 45,
+        "maxDistance": 4,
+        "allowMovement": false,
+        "enabled": true,
+        "hidden": false
+      }
+    }
+  },
+  "environment": {
+    "uuid": "3581b9d6-68c1-470f-83bb-f82bea1b42d3",
+    "position": [0, 0, 0],
+    "rotation": [0, 0, 0],
+    "scale": [1, 1, 1]
+  }
+}
