@@ -151,11 +151,11 @@ button:hover {
   white-space:normal;
   word-break:break-word;
   line-height:1.2;
-  display:-webkit-box;
-  -webkit-box-orient:vertical;
-  -webkit-line-clamp:2;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
   overflow:hidden;
-  text-overflow:ellipsis;
 }
 .variant-btn.selected{
   background:var(--color-Brand-Main);
