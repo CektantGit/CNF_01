@@ -136,9 +136,9 @@ export async function viewInAR(scene) {
 
   await modelViewer.updateComplete;
 
-  if (modelViewer.canActivateAR && modelViewer.canActivateAR()) {
-    modelViewer.activateAR();
-  } else {
+  try {
+    await modelViewer.activateAR();
+  } catch (err) {
     const link = document.createElement('a');
     link.href = glbUrl;
     link.download = 'scene.glb';
