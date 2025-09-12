@@ -232,7 +232,9 @@ async function loadAll(){
         loader.load(url,(gltf)=>{envMesh=gltf.scene;resolve();},undefined,()=>resolve());
       });
       if(envMesh){
+        envMesh.userData.isEnv=true;
         envMesh.traverse(ch=>{
+          ch.userData.isEnv=true;
           if(ch.isMesh){
             ch.castShadow=false; ch.receiveShadow=false;
             const m=ch.material;

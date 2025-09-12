@@ -36,7 +36,15 @@ export function renderSlots(container, state, onSelect){
   const stepId = state.currentStep?.id;
   state.slots
     .filter(s=>String(s.stepId)===String(stepId))
-    .filter(s=>s.canBeEmpty || s.objects.length>1)
+    .filter(s=>{
+      if(s.canBeEmpty) return true;
+      if(s.objects.length>1) return true;
+      if(s.objects.length===1){
+        const obj=s.objects[0];
+        return obj.materials && obj.materials.length>1;
+      }
+      return false;
+    })
     .forEach((slot)=>{
     const slotIndex = state.slots.indexOf(slot);
     const wrap = document.createElement('div');

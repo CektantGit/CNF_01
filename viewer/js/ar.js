@@ -10,6 +10,7 @@ export async function viewInAR(scene) {
   // Clone all meshes with world transforms and strip extra attributes.
   scene.traverse(obj => {
     if (!obj.isMesh) return;
+    if (obj.userData.isEnv) return;
 
     const toStandard = m => {
       if (m.isMeshStandardMaterial) {
