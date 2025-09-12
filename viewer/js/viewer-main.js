@@ -332,7 +332,7 @@ async function loadAll(){
         }
       });
       envOutline.scale.x *= 1.01;
-      envOutline.scale.z *= 0.9;
+      envOutline.scale.z *= 0.8;
       envMesh.add(envOutline);
       scene.add(envMesh);
       baseOutlines.push(envMesh);
