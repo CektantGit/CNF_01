@@ -42,6 +42,7 @@ const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
 const stepsBtn = document.getElementById('stepsBtn');
 const viewBtn = document.getElementById('viewBtn');
+const viewToggleBtn = document.getElementById('viewToggle');
 const stepsModal = document.getElementById('stepsModal');
 const modalEl = document.getElementById('objectModal');
 const moveBtn = document.getElementById('moveBtn');
@@ -107,6 +108,10 @@ transform.addEventListener('dragging-changed', e => { orbit.enabled = !e.value; 
 const gizmoScene = new THREE.Scene();
 gizmoScene.add(transform);
 
+const defaultCamPos = camera.position.clone();
+const defaultTarget = orbit.target.clone();
+let viewPreview = false;
+
 // postprocessing for hover outline
 const composer = new EffectComposer(renderer);
 composer.setSize(viewer.clientWidth, viewer.clientHeight);
@@ -150,6 +155,48 @@ viewPivot.rotation.set(
   THREE.MathUtils.degToRad(state.viewPoint.rotation[1]),
   THREE.MathUtils.degToRad(state.viewPoint.rotation[2])
 );
+
+function applyViewPreview(){
+  const vp = state.viewPoint;
+  orbit.target.set(vp.position[0], vp.position[1], vp.position[2]);
+  const offset = new THREE.Vector3(0,1,3);
+  const euler = new THREE.Euler(
+    THREE.MathUtils.degToRad(vp.rotation[0]),
+    THREE.MathUtils.degToRad(vp.rotation[1]),
+    THREE.MathUtils.degToRad(vp.rotation[2])
+  );
+  offset.applyEuler(euler);
+  camera.position.set(
+    vp.position[0] + offset.x,
+    vp.position[1] + offset.y,
+    vp.position[2] + offset.z
+  );
+  orbit.minPolarAngle = 0;
+  orbit.maxPolarAngle = vp.vertical > 0 ? THREE.MathUtils.degToRad(vp.vertical) : Math.PI;
+  if(vp.horizontal>0){
+    const r = THREE.MathUtils.degToRad(vp.horizontal);
+    orbit.minAzimuthAngle = -r;
+    orbit.maxAzimuthAngle = r;
+  }else{
+    orbit.minAzimuthAngle = -Infinity;
+    orbit.maxAzimuthAngle = Infinity;
+  }
+  orbit.maxDistance = vp.maxDistance>0 ? vp.maxDistance : Infinity;
+  orbit.enablePan = vp.allowMovement;
+  orbit.update();
+}
+
+function resetViewPreview(){
+  orbit.target.copy(defaultTarget);
+  camera.position.copy(defaultCamPos);
+  orbit.minPolarAngle=0;
+  orbit.maxPolarAngle=Math.PI;
+  orbit.minAzimuthAngle=-Infinity;
+  orbit.maxAzimuthAngle=Infinity;
+  orbit.maxDistance=Infinity;
+  orbit.enablePan=true;
+  orbit.update();
+}
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -313,6 +360,7 @@ function reloadScene(){
     THREE.MathUtils.degToRad(state.viewPoint.rotation[1]),
     THREE.MathUtils.degToRad(state.viewPoint.rotation[2])
   );
+  if(viewPreview) applyViewPreview();
 }
 
 function renderVariants(){
@@ -343,6 +391,7 @@ transform.addEventListener('objectChange', () => {
       THREE.MathUtils.radToDeg(viewPivot.rotation.y),
       THREE.MathUtils.radToDeg(viewPivot.rotation.z)
     ];
+    if(viewPreview) applyViewPreview();
   } else {
     const obj = transform.object?.userData?.stateObj || transform.object?.userData?.envObj;
     if (!obj) return;
@@ -500,8 +549,9 @@ function selectSlot(index){
     activateSlot(null);
     return;
   }
+  if(typeof index!=='number' || !state.slots[index]) return;
   state.currentSlotIndex = index;
-  const stepIdx = state.steps.findIndex(st=>st.id===state.slots[index].stepId);
+  const stepIdx = state.steps.findIndex(st=>st.id===state.slots[index]?.stepId);
   if(stepIdx!==-1) state.currentStepIndex = stepIdx;
   renderUI();
   activateSlot(state.currentSlot);
@@ -626,8 +676,15 @@ saveViewBtn.addEventListener('click', ()=>{
   state.viewPoint.maxDistance = parseFloat(viewDist.value)||0;
   state.viewPoint.allowMovement = viewMove.checked;
   viewModal.style.display='none';
+  if(viewPreview) applyViewPreview();
 });
 closeViewBtn.addEventListener('click', ()=>{viewModal.style.display='none';});
+
+viewToggleBtn.addEventListener('click',()=>{
+  viewPreview = !viewPreview;
+  viewToggleBtn.classList.toggle('active', viewPreview);
+  if(viewPreview) applyViewPreview(); else resetViewPreview();
+});
 
 function changeStep(delta){
   const len = state.steps.length;
