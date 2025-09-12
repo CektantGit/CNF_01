@@ -2,6 +2,36 @@ import * as THREE from 'three';
 import { GLTFExporter } from 'GLTFExporter';
 import { USDZExporter } from 'USDZExporter';
 
+function fixTexture(tex) {
+  if (!tex) return null;
+  const img = tex.image;
+  if (
+    img instanceof HTMLImageElement ||
+    img instanceof HTMLCanvasElement ||
+    img instanceof ImageBitmap ||
+    img instanceof OffscreenCanvas
+  ) {
+    return tex;
+  }
+  if (img && img.data && img.width && img.height) {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    const data = img.data.buffer ? new Uint8ClampedArray(img.data.buffer) : img.data;
+    const imageData = new ImageData(data, img.width, img.height);
+    ctx.putImageData(imageData, 0, 0);
+    const ctex = new THREE.CanvasTexture(canvas);
+    ctex.flipY = tex.flipY;
+    ctex.wrapS = tex.wrapS;
+    ctex.wrapT = tex.wrapT;
+    ctex.repeat.copy(tex.repeat);
+    ctex.offset.copy(tex.offset);
+    return ctex;
+  }
+  return null;
+}
+
 // Export the current scene and launch model-viewer's AR mode.
 export async function viewInAR(scene) {
   const exportScene = new THREE.Group();
@@ -17,13 +47,27 @@ export async function viewInAR(scene) {
         const mat = m.clone();
         mat.side = THREE.FrontSide;
         mat.envMap = null;
+        ['map', 'normalMap', 'roughnessMap', 'metalnessMap'].forEach(k => {
+          if (mat[k]) {
+            const fixed = fixTexture(mat[k]);
+            if (fixed) mat[k] = fixed; else delete mat[k];
+          }
+        });
         return mat;
       }
       const params = { color: m.color };
-      if (m.map) params.map = m.map;
-      if (m.normalMap) params.normalMap = m.normalMap;
-      if (m.roughnessMap) params.roughnessMap = m.roughnessMap;
-      if (m.metalnessMap) params.metalnessMap = m.metalnessMap;
+      if (m.map) {
+        const t = fixTexture(m.map); if (t) params.map = t;
+      }
+      if (m.normalMap) {
+        const t = fixTexture(m.normalMap); if (t) params.normalMap = t;
+      }
+      if (m.roughnessMap) {
+        const t = fixTexture(m.roughnessMap); if (t) params.roughnessMap = t;
+      }
+      if (m.metalnessMap) {
+        const t = fixTexture(m.metalnessMap); if (t) params.metalnessMap = t;
+      }
       const mat = new THREE.MeshStandardMaterial(params);
       mat.side = THREE.FrontSide;
       mat.envMap = null;
