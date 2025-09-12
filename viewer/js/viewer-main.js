@@ -35,16 +35,16 @@ const defaultCamPos = camera.position.clone();
 const defaultTarget = controls.target.clone();
 
 const pmrem = new THREE.PMREMGenerator(renderer);
-new RGBELoader().load(
-  'https://vizbl.com/hdr/neutral.hdr',
-  (hdr) => {
-    const envMap = pmrem.fromEquirectangular(hdr).texture;
+  new RGBELoader().load(
+    'https://vizbl.com/hdr/neutral.hdr',
+    (hdr) => {
+      const envMap = pmrem.fromEquirectangular(hdr).texture;
     scene.environment = envMap;
-    scene.background = envMap;
-    hdr.dispose();
-    pmrem.dispose();
-  }
-);
+    scene.background = new THREE.Color(0xffffff);
+      hdr.dispose();
+      pmrem.dispose();
+    }
+  );
 
 const ambient = new THREE.AmbientLight(0xffffff, 0.3);
 scene.add(ambient);
@@ -139,35 +139,40 @@ function renderUI(){
   renderSlots(slotsContainer, state, selectObject);
 }
 
-function showLoading(r) {
+function showLoading(r, initial = false) {
   const overlay = document.getElementById('loadingOverlay');
   const bar = document.getElementById('progressBar');
+  if (initial) overlay.classList.add('white');
   overlay.style.display = 'flex';
   bar.style.width = Math.floor(r * 100) + '%';
 }
 function hideLoading() {
-  document.getElementById('loadingOverlay').style.display = 'none';
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.style.display = 'none';
+  overlay.classList.remove('white');
   document.getElementById('progressBar').style.width = '0';
 }
 
-async function loadMesh(obj) {
+async function loadMesh(obj, overlay = false) {
   if (obj.mesh) return obj.mesh;
   const mat = obj.materials[obj.selectedMaterial || 0];
   const url = mat?.native?.glbUrl;
   if (!url) return null;
   return await new Promise((resolve) => {
+    if (overlay) showLoading(0);
     loader.load(
       url,
       (gltf) => {
         obj.mesh = gltf.scene;
+        if (overlay) hideLoading();
         resolve(obj.mesh);
       },
       (evt) => {
-        if (evt.total) showLoading(evt.loaded / evt.total);
+        if (overlay && evt.total) showLoading(evt.loaded / evt.total);
       },
       (err) => {
         console.error(err);
-        hideLoading();
+        if (overlay) hideLoading();
         resolve(null);
       }
     );
@@ -188,8 +193,7 @@ async function selectObject(slotIdx, objIdx, matIdx) {
   const obj = slot.objects[objIdx];
   if (typeof matIdx === 'number') obj.selectedMaterial = matIdx;
   obj.mesh = null; // force reload for new material
-  const mesh = await loadMesh(obj);
-  hideLoading();
+  const mesh = await loadMesh(obj, true);
   if (!mesh) {
     renderUI();
     return;
@@ -214,43 +218,55 @@ async function loadAll(){
   state.slots.forEach(s=>{
     if(s.currentMesh){ scene.remove(s.currentMesh); s.currentMesh=null; }
   });
+
+  const slotsToLoad = state.slots.filter(s=>s.selectedIndex>=0);
+  const total = (state.environment?1:0) + slotsToLoad.length;
+  let loaded = 0;
+  if(total>0) showLoading(0, true);
+
   if(state.environment){
     const mat=state.environment.materials[state.environment.selectedMaterial];
     const url=mat?.native?.glbUrl;
     if(url){
-      const gltf=await loader.loadAsync(url);
-      envMesh=gltf.scene;
-      envMesh.traverse(ch=>{
-        if(ch.isMesh){
-          ch.castShadow=false; ch.receiveShadow=false;
-          const m=ch.material;
-          ch.material=new THREE.MeshBasicMaterial({
-            map:m.map, aoMap:m.aoMap, aoMapIntensity:m.aoMapIntensity,
-            color:m.color?.clone(), transparent:m.transparent, opacity:m.opacity, side:m.side
-          });
-        }
+      await new Promise((resolve)=>{
+        loader.load(url,(gltf)=>{envMesh=gltf.scene;resolve();},undefined,()=>resolve());
       });
-      envMesh.position.fromArray(state.environment.transform.position);
-      envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
-      envMesh.scale.fromArray(state.environment.transform.scale);
-      scene.add(envMesh);
-      envMesh.updateWorldMatrix(true, true);
-    }
-  }
-  for(const slot of state.slots){
-    if(slot.selectedIndex>=0){
-      const obj = slot.objects[slot.selectedIndex];
-      const mesh = await loadMesh(obj);
-      if(mesh){
-        const inst = mesh.clone();
-        inst.position.fromArray(obj.transform.position);
-        inst.rotation.set(...obj.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
-        inst.scale.fromArray(obj.transform.scale);
-        inst.userData.slotIdx = state.slots.indexOf(slot);
-        inst.userData.objIdx = slot.selectedIndex;
-        slot.currentMesh = inst;
-        scene.add(inst);
+      if(envMesh){
+        envMesh.traverse(ch=>{
+          if(ch.isMesh){
+            ch.castShadow=false; ch.receiveShadow=false;
+            const m=ch.material;
+            ch.material=new THREE.MeshBasicMaterial({
+              map:m.map, aoMap:m.aoMap, aoMapIntensity:m.aoMapIntensity,
+              color:m.color?.clone(), transparent:m.transparent, opacity:m.opacity, side:m.side
+            });
+          }
+        });
+        envMesh.position.fromArray(state.environment.transform.position);
+        envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
+        envMesh.scale.fromArray(state.environment.transform.scale);
+        scene.add(envMesh);
+        envMesh.updateWorldMatrix(true, true);
       }
+    }
+    loaded++;
+    showLoading(loaded/total);
+  }
+
+  for(const slot of slotsToLoad){
+    const obj = slot.objects[slot.selectedIndex];
+    const mesh = await loadMesh(obj, false);
+    loaded++;
+    showLoading(loaded/total);
+    if(mesh){
+      const inst = mesh.clone();
+      inst.position.fromArray(obj.transform.position);
+      inst.rotation.set(...obj.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
+      inst.scale.fromArray(obj.transform.scale);
+      inst.userData.slotIdx = state.slots.indexOf(slot);
+      inst.userData.objIdx = slot.selectedIndex;
+      slot.currentMesh = inst;
+      scene.add(inst);
     }
   }
   hideLoading();
@@ -311,16 +327,15 @@ renderer.domElement.addEventListener('pointerup', (e) => {
 });
 
 async function handleImport(file) {
+  showLoading(0, true);
   const text = await file.text();
   const data = JSON.parse(text);
-  // remove previous meshes from scene
   state.slots.forEach((s) => {
     if (s.currentMesh) {
       scene.remove(s.currentMesh);
       s.currentMesh = null;
     }
   });
-
   await state.loadConfig(data, fetchObjectDetails);
   await loadAll();
   if(state.viewPoint.enabled) applyViewPoint(); else resetViewPoint();
