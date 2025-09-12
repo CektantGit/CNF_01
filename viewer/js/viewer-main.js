@@ -36,7 +36,7 @@ const defaultTarget = controls.target.clone();
 
 const pmrem = new THREE.PMREMGenerator(renderer);
 new RGBELoader().load(
-  'https://github.com/google/model-viewer/raw/refs/heads/master/packages/shared-assets/environments/neutral.hdr',
+  'https://vizbl.com/hdr/neutral.hdr',
   (hdr) => {
     const envMap = pmrem.fromEquirectangular(hdr).texture;
     scene.environment = envMap;
