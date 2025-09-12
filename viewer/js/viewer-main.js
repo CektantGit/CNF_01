@@ -104,7 +104,7 @@ let pointerDown = null;
 let pointerMoved = false;
 let hovered = null;
 let envMesh = null;
-let envDepthMesh = null;
+const baseOutlines = [];
 function applyViewPoint(){
   const vp = state.viewPoint;
   if(!vp.enabled){ resetViewPoint(); return; }
@@ -287,12 +287,12 @@ async function selectObject(slotIdx, objIdx, matIdx) {
 function setHovered(obj) {
   if (hovered === obj) return;
   hovered = obj;
-  outlinePass.selectedObjects = obj ? [obj] : [];
+  outlinePass.selectedObjects = baseOutlines.concat(obj ? [obj] : []);
 }
 
 async function loadAll(){
   if(envMesh){scene.remove(envMesh); envMesh=null;}
-  if(envDepthMesh){scene.remove(envDepthMesh); envDepthMesh=null;}
+  baseOutlines.length = 0;
   state.slots.forEach(s=>{
     if(s.currentMesh){ scene.remove(s.currentMesh); s.currentMesh=null; }
   });
@@ -312,44 +312,15 @@ async function loadAll(){
           });
         }
       });
-      envDepthMesh = envMesh.clone();
-      envDepthMesh.traverse(ch=>{
-        if(ch.isMesh){
-          const dm = new THREE.MeshBasicMaterial({side: ch.material.side});
-          dm.colorWrite = false;
-          ch.material = dm;
-        }
-      });
-      envDepthMesh.userData.noExport = true;
-      envDepthMesh.renderOrder = -1;
-      envMesh.traverse(ch=>{
-        if(ch.isMesh){
-          const edges = new THREE.EdgesGeometry(ch.geometry);
-          const line = new THREE.LineSegments(
-            edges,
-            new THREE.LineBasicMaterial({ color: 0x000000 })
-          );
-          line.material.depthTest = true;
-          line.material.depthWrite = false;
-          line.material.polygonOffset = true;
-          line.material.polygonOffsetFactor = -1;
-          line.material.polygonOffsetUnits = -1;
-          ch.add(line);
-        }
-      });
       envMesh.position.fromArray(state.environment.transform.position);
       envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
       envMesh.scale.fromArray(state.environment.transform.scale);
-      envDepthMesh.position.copy(envMesh.position);
-      envDepthMesh.rotation.copy(envMesh.rotation);
-      envDepthMesh.scale.copy(envMesh.scale);
-      // expand slightly on X to avoid z-fighting and shrink on Z so depth copy
-      // doesn't occlude distant objects when viewing from afar
-      envDepthMesh.scale.x *= 1.001;
-      envDepthMesh.scale.z *= 0.85;
-      scene.add(envDepthMesh);
       scene.add(envMesh);
+      baseOutlines.push(envMesh);
+      setHovered(hovered);
     }
+  } else {
+    setHovered(hovered);
   }
   for(const slot of state.slots){
     if(slot.selectedIndex>=0){

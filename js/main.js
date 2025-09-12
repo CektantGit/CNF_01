@@ -218,6 +218,7 @@ const pointer = new THREE.Vector2();
 let pointerDown = null;
 let pointerMoved = false;
 let hovered = null;
+const baseOutlines = [];
 
 function isMobile(){
   return window.innerWidth <= 768;
@@ -236,7 +237,6 @@ window.addEventListener('resize', handleResize);
 
 const meshes = {};
 let envMesh = null;
-let envDepthMesh = null;
 let envLocked = true;
 let transformMode = null;
 
@@ -328,11 +328,8 @@ function loadEnvironment(env){
     scene.remove(envMesh);
     envMesh=null;
   }
-  if(envDepthMesh){
-    scene.remove(envDepthMesh);
-    envDepthMesh=null;
-  }
-  if(!env) { updateCoordInputs(); return; }
+  baseOutlines.length = 0;
+  if(!env) { setHovered(hovered); updateCoordInputs(); return; }
   const mat = env.materials[env.selectedMaterial];
   const url = mat?.native?.glbUrl;
   if(!url) return;
@@ -352,16 +349,6 @@ function loadEnvironment(env){
         });
       }
     });
-    envDepthMesh = envMesh.clone();
-    envDepthMesh.traverse(ch=>{
-      if(ch.isMesh){
-        const dm = new THREE.MeshBasicMaterial({side: ch.material.side});
-        dm.colorWrite = false;
-        ch.material = dm;
-      }
-    });
-    envDepthMesh.userData.noExport = true;
-    envDepthMesh.renderOrder = -1;
     envMesh.position.fromArray(env.transform.position);
     envMesh.rotation.set(
       THREE.MathUtils.degToRad(env.transform.rotation[0]),
@@ -369,16 +356,10 @@ function loadEnvironment(env){
       THREE.MathUtils.degToRad(env.transform.rotation[2])
     );
     envMesh.scale.fromArray(env.transform.scale);
-    envDepthMesh.position.copy(envMesh.position);
-    envDepthMesh.rotation.copy(envMesh.rotation);
-    envDepthMesh.scale.copy(envMesh.scale);
-    // expand slightly on X to avoid z-fighting and shrink on Z so depth copy
-    // doesn't occlude distant objects
-    envDepthMesh.scale.x *= 1.001;
-    envDepthMesh.scale.z *= 0.85;
     envMesh.userData.envObj = env;
-    scene.add(envDepthMesh);
     scene.add(envMesh);
+    baseOutlines.push(envMesh);
+    setHovered(hovered);
     if(transformMode!==null && state.currentSlotIndex===-1 && !envLocked) transform.attach(envMesh); else transform.detach();
     hideLoading();
   },xhr=>{ if(xhr.total) updateLoading(xhr.loaded/xhr.total); },err=>{console.error(err);hideLoading();});
@@ -388,7 +369,7 @@ function reloadScene(){
   Object.values(meshes).forEach(m=>{ if(transform.object===m) transform.detach(); scene.remove(m);});
   Object.keys(meshes).forEach(k=>delete meshes[k]);
   if(envMesh){ if(transform.object===envMesh) transform.detach(); scene.remove(envMesh); envMesh=null; }
-  if(envDepthMesh){ scene.remove(envDepthMesh); envDepthMesh=null; }
+  baseOutlines.length = 0;
   if(state.environment) loadEnvironment(state.environment);
   state.slots.forEach((slot,idx)=>loadSlot(slot, idx===state.currentSlotIndex));
   viewPivot.position.fromArray(state.viewPoint.position);
@@ -535,7 +516,7 @@ function activateSlot(slot) {
 function setHovered(obj) {
   if (hovered === obj) return;
   hovered = obj;
-  outlinePass.selectedObjects = obj ? [obj] : [];
+  outlinePass.selectedObjects = baseOutlines.concat(obj ? [obj] : []);
 }
 
 function handleHover(event) {
@@ -796,7 +777,8 @@ loadEnvBtn.addEventListener('click',async()=>{
 removeEnvBtn.addEventListener('click',()=>{
   state.removeEnvironment();
   if(envMesh){ if(transform.object===envMesh) transform.detach(); scene.remove(envMesh); envMesh=null; }
-  if(envDepthMesh){ scene.remove(envDepthMesh); envDepthMesh=null; }
+  baseOutlines.length = 0;
+  setHovered(hovered);
   envModal.style.display='none';
   updateCoordInputs();
 });
