@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
-import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/lib/browser.min.js';
+import * as QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/lib/browser.min.js?module';
 import { viewInAR } from './ar.js';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots, renderVariants } from './viewer-ui.js';
