@@ -70,12 +70,6 @@ export function renderSlots(container, state, onSelect){
       }
     }
     slot.objects.forEach((obj,oIdx)=>{
-      if(!slot.textButtons){
-        const objLabel=document.createElement('div');
-        objLabel.className='object-label';
-        objLabel.textContent=obj.name;
-        list.appendChild(objLabel);
-      }
       obj.materials.forEach((mat,mIdx)=>{
         if(slot.textButtons){
           const btn=document.createElement('button');
