@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { GLTFExporter } from 'GLTFExporter';
-import { USDZExporter } from 'USDZExporter';
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
+import { USDZExporter } from 'three/examples/jsm/exporters/USDZExporter.js';
 
 function fixTexture(tex) {
   if (!tex) return null;

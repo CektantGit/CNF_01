@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'OrbitControls';
-import { GLTFLoader } from 'GLTFLoader';
-import { RGBELoader } from 'RGBELoader';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.esm.js';
 import { viewInAR } from './ar.js';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots, renderVariants } from './viewer-ui.js';
@@ -428,7 +429,7 @@ function updateShare(){
     return;
   }
   arBtn.style.display='none';
-  qrOverlay.style.display='flex';
+  qrOverlay.style.display='inline-flex';
   const url=location.origin+location.pathname+ '?cfg='+encodeConfig();
   const ctx=qrCanvas.getContext('2d');
   ctx.clearRect(0,0,qrCanvas.width,qrCanvas.height);
