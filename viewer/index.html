@@ -22,10 +22,13 @@
 <body>
   <div id="viewerWrapper">
     <div id="viewerCanvas">
-      <div id="bottomButtons">
-        <button id="arBtn">AR</button>
-        <button id="importBtn">Import JSON</button>
-        <input type="file" id="importInput" accept="application/json" style="display:none" />
+      <button id="arBtn">View in place</button>
+      <div id="qrOverlay">
+        <div class="qr-text">
+          <p class="title">View in place</p>
+          <span class="desc">Scan this QR code with your phone's camera</span>
+        </div>
+        <div class="qr-code"><canvas id="qrCanvas"></canvas></div>
       </div>
     </div>
     <div id="slotPanel">
@@ -45,6 +48,7 @@
     </div>
   </div>
   <model-viewer id="ar-viewer" ar ar-modes="webxr" style="width:0;height:0;visibility:hidden"></model-viewer>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script type="module" src="./js/viewer-main.js"></script>
 </body>
 </html>

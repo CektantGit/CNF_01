@@ -11,9 +11,9 @@ const container = document.getElementById('viewerCanvas');
 const slotPanel = document.getElementById('slotPanel');
 const variantBar = document.getElementById('variantBar');
 const slotsContainer = document.getElementById('slotsContainer');
-const importBtn = document.getElementById('importBtn');
-const importInput = document.getElementById('importInput');
 const arBtn = document.getElementById('arBtn');
+const qrOverlay = document.getElementById('qrOverlay');
+const qrCanvas = document.getElementById('qrCanvas');
 const stepNameEl = document.getElementById('stepName');
 const prevStepBtn = document.getElementById('prevStep');
 const nextStepBtn = document.getElementById('nextStep');
@@ -51,6 +51,8 @@ scene.add(ambient);
 const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
 dirLight.position.set(5, 10, 7.5);
 scene.add(dirLight);
+
+const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 function resize() {
   const w = container.clientWidth;
@@ -200,6 +202,7 @@ async function selectObject(slotIdx, objIdx, matIdx) {
     if (previousMesh) scene.remove(previousMesh);
     slot.currentMesh = null;
     renderUI();
+    updateShare();
     hideLoading();
     return;
   }
@@ -300,6 +303,7 @@ async function loadAll(){
   }
   showLoading(1);
   renderUI();
+  updateShare();
 }
 
 async function selectVariant(idx){
@@ -311,6 +315,7 @@ async function selectVariant(idx){
   state.setVariant(idx);
   await loadAll();
   if(state.viewPoint.enabled) applyViewPoint(); else resetViewPoint();
+  updateShare();
   hideLoading();
 }
 
@@ -357,35 +362,15 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   pointerDown = null;
 });
 
-async function handleImport(file) {
-  showLoading(0, true);
-  const text = await file.text();
-  const data = JSON.parse(text);
-  state.slots.forEach((s) => {
-    if (s.currentMesh) {
-      scene.remove(s.currentMesh);
-      s.currentMesh = null;
-    }
-  });
-  await state.loadConfig(data, fetchObjectDetails);
-  await loadAll();
-  if(state.viewPoint.enabled) applyViewPoint(); else resetViewPoint();
-  hideLoading();
-}
-
-importBtn.addEventListener('click', () => importInput.click());
-importInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (file) handleImport(file);
-});
-
 prevStepBtn.addEventListener('click',()=>{
   state.currentStepIndex = (state.currentStepIndex - 1 + state.steps.length) % state.steps.length;
   renderUI();
+  updateShare();
 });
 nextStepBtn.addEventListener('click',()=>{
   state.currentStepIndex = (state.currentStepIndex + 1) % state.steps.length;
   renderUI();
+  updateShare();
 });
 
 arBtn.addEventListener('click', async () => {
@@ -400,15 +385,49 @@ arBtn.addEventListener('click', async () => {
     const res = await fetch('default-config.json');
     const data = await res.json();
     await state.loadConfig(data, fetchObjectDetails);
+    const params=new URLSearchParams(location.search);
+    const cfg=params.get('cfg');
+    if(cfg) applyEncodedConfig(cfg);
     await loadAll();
     if (state.viewPoint.enabled) {
       applyViewPoint();
     } else {
       resetViewPoint();
     }
+    updateShare();
     hideLoading();
   } catch (err) {
     console.error('Default config load failed', err);
     hideLoading();
   }
 })();
+
+function encodeConfig(){
+  let str='';
+  state.slots.forEach(slot=>{
+    const idx=slot.selectedIndex<0?0:slot.selectedIndex;
+    str+=String.fromCharCode(65+idx);
+  });
+  return str;
+}
+
+function applyEncodedConfig(str){
+  for(let i=0;i<state.slots.length && i<str.length;i++){
+    const idx=str.charCodeAt(i)-65;
+    if(idx>=0 && idx<state.slots[i].objects.length){
+      state.slots[i].selectedIndex=idx;
+    }
+  }
+}
+
+function updateShare(){
+  if(isMobile){
+    arBtn.style.display='block';
+    qrOverlay.style.display='none';
+    return;
+  }
+  arBtn.style.display='none';
+  qrOverlay.style.display='flex';
+  const url=location.origin+location.pathname+ '?cfg='+encodeConfig();
+  QRCode.toCanvas(qrCanvas,url,{width:96});
+}
