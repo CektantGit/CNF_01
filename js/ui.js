@@ -1,5 +1,10 @@
 export function renderSlots(state, container, { onSelect, onDelete, onToggleHide }, stepId) {
   container.innerHTML = '';
+  const vp = document.createElement('li');
+  vp.className = 'slot' + (state.currentSlotIndex === -1 ? ' selected' : '');
+  vp.textContent = 'Point view';
+  vp.addEventListener('click', () => onSelect('view'));
+  container.appendChild(vp);
   state.slots.filter(s=>s.stepId===stepId).forEach((slot) => {
     const index = state.slots.indexOf(slot);
     const li = document.createElement('li');
@@ -81,6 +86,13 @@ export function renderObjects(slot, container, { onSelectObject, onSelectMateria
 
 export function renderSlotsMobile(state, container, slotCallbacks, objectCallbacks, stepId){
   container.innerHTML='';
+  const vp=document.createElement('details');
+  vp.className='slot-mobile';
+  const sum=document.createElement('summary');
+  sum.textContent='Point view';
+  sum.addEventListener('click',e=>{slotCallbacks.onSelect('view');});
+  vp.appendChild(sum);
+  container.appendChild(vp);
   state.slots.filter(s=>s.stepId===stepId).forEach((slot)=>{
     const index = state.slots.indexOf(slot);
     const det=document.createElement('details');

@@ -30,13 +30,18 @@ const stepControls = document.getElementById('stepControls');
 const addObjectBtn = document.getElementById('addObjectBtn');
 const inheritBtn = document.getElementById('inheritBtn');
 const objectsContainer = document.getElementById('objects');
+const objectActionsRow = document.getElementById('objectActions');
+const slotOptionsRow = document.getElementById('slotOptions');
 const canBeEmptyChk = document.getElementById('canBeEmpty');
 const textButtonsChk = document.getElementById('textButtons');
 const slotSettingsBtn = document.getElementById('slotSettings');
+const viewActions = document.getElementById('viewActions');
+const viewSettingsBtn = document.getElementById('viewSettings');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
 const stepsBtn = document.getElementById('stepsBtn');
+const viewBtn = document.getElementById('viewBtn');
 const stepsModal = document.getElementById('stepsModal');
 const modalEl = document.getElementById('objectModal');
 const moveBtn = document.getElementById('moveBtn');
@@ -62,6 +67,13 @@ const varModal = document.getElementById('varModal');
 const varList = document.getElementById('varList');
 const saveVarBtn = document.getElementById('saveVar');
 const closeVarBtn = document.getElementById('closeVar');
+const viewModal = document.getElementById('viewModal');
+const viewVert = document.getElementById('viewVert');
+const viewHoriz = document.getElementById('viewHoriz');
+const viewDist = document.getElementById('viewDist');
+const viewMove = document.getElementById('viewMove');
+const saveViewBtn = document.getElementById('saveView');
+const closeViewBtn = document.getElementById('closeView');
 outlineBtn.classList.add('active');
 
 // THREE.js setup
@@ -130,6 +142,15 @@ const grid = new THREE.GridHelper(10, 10);
 grid.visible = false;
 scene.add(grid);
 
+const viewPivot = new THREE.Mesh(new THREE.SphereGeometry(0.05), new THREE.MeshBasicMaterial({color:0xff0000}));
+scene.add(viewPivot);
+viewPivot.position.fromArray(state.viewPoint.position);
+viewPivot.rotation.set(
+  THREE.MathUtils.degToRad(state.viewPoint.rotation[0]),
+  THREE.MathUtils.degToRad(state.viewPoint.rotation[1]),
+  THREE.MathUtils.degToRad(state.viewPoint.rotation[2])
+);
+
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let pointerDown = null;
@@ -158,6 +179,21 @@ let transformMode = null;
 
 const axisNames = ['x','y','z'];
 
+function updatePanels(){
+  if(state.currentSlotIndex===-1){
+    objectActionsRow.style.display='none';
+    slotOptionsRow.style.display='none';
+    viewActions.style.display='block';
+    viewBtn.style.display='inline-block';
+    objectsContainer.innerHTML='';
+  }else{
+    objectActionsRow.style.display='flex';
+    slotOptionsRow.style.display='flex';
+    viewActions.style.display='none';
+    viewBtn.style.display='none';
+  }
+}
+
 function updateCoordInputs(){
   if (transformMode === null || !transform.object) {
     coordsPanel.style.display = 'none';
@@ -185,17 +221,28 @@ function updateCoordInputs(){
     if (!transform.object) return;
     const val = parseFloat(input.value);
     if (isNaN(val)) return;
-    const obj = transform.object.userData.stateObj || transform.object.userData.envObj;
-    if (transformMode === 'translate') {
-      transform.object.position[axisNames[idx]] = val;
-      obj.transform.position[idx] = val;
-    } else if (transformMode === 'rotate') {
-      const rad = THREE.MathUtils.degToRad(val);
-      transform.object.rotation[axisNames[idx]] = rad;
-      obj.transform.rotation[idx] = val;
-    } else if (transformMode === 'scale') {
-      transform.object.scale[axisNames[idx]] = val;
-      obj.transform.scale[idx] = val;
+    if(transform.object === viewPivot){
+      if(transformMode === 'translate'){
+        viewPivot.position[axisNames[idx]] = val;
+        state.viewPoint.position[idx] = val;
+      }else if(transformMode === 'rotate'){
+        const rad = THREE.MathUtils.degToRad(val);
+        viewPivot.rotation[axisNames[idx]] = rad;
+        state.viewPoint.rotation[idx] = val;
+      }
+    } else {
+      const obj = transform.object.userData.stateObj || transform.object.userData.envObj;
+      if (transformMode === 'translate') {
+        transform.object.position[axisNames[idx]] = val;
+        obj.transform.position[idx] = val;
+      } else if (transformMode === 'rotate') {
+        const rad = THREE.MathUtils.degToRad(val);
+        transform.object.rotation[axisNames[idx]] = rad;
+        obj.transform.rotation[idx] = val;
+      } else if (transformMode === 'scale') {
+        transform.object.scale[axisNames[idx]] = val;
+        obj.transform.scale[idx] = val;
+      }
     }
     updateCoordInputs();
   });
@@ -260,6 +307,12 @@ function reloadScene(){
   if(envMesh){ if(transform.object===envMesh) transform.detach(); scene.remove(envMesh); envMesh=null; }
   if(state.environment) loadEnvironment(state.environment);
   state.slots.forEach((slot,idx)=>loadSlot(slot, idx===state.currentSlotIndex));
+  viewPivot.position.fromArray(state.viewPoint.position);
+  viewPivot.rotation.set(
+    THREE.MathUtils.degToRad(state.viewPoint.rotation[0]),
+    THREE.MathUtils.degToRad(state.viewPoint.rotation[1]),
+    THREE.MathUtils.degToRad(state.viewPoint.rotation[2])
+  );
 }
 
 function renderVariants(){
@@ -283,15 +336,24 @@ animate();
 
 // track transform changes for the currently attached object
 transform.addEventListener('objectChange', () => {
-  const obj = transform.object?.userData?.stateObj || transform.object?.userData?.envObj;
-  if (!obj) return;
-  obj.transform.position = [transform.object.position.x, transform.object.position.y, transform.object.position.z];
-  obj.transform.rotation = [
-    THREE.MathUtils.radToDeg(transform.object.rotation.x),
-    THREE.MathUtils.radToDeg(transform.object.rotation.y),
-    THREE.MathUtils.radToDeg(transform.object.rotation.z)
-  ];
-  obj.transform.scale = [transform.object.scale.x, transform.object.scale.y, transform.object.scale.z];
+  if(transform.object===viewPivot){
+    state.viewPoint.position = [viewPivot.position.x, viewPivot.position.y, viewPivot.position.z];
+    state.viewPoint.rotation = [
+      THREE.MathUtils.radToDeg(viewPivot.rotation.x),
+      THREE.MathUtils.radToDeg(viewPivot.rotation.y),
+      THREE.MathUtils.radToDeg(viewPivot.rotation.z)
+    ];
+  } else {
+    const obj = transform.object?.userData?.stateObj || transform.object?.userData?.envObj;
+    if (!obj) return;
+    obj.transform.position = [transform.object.position.x, transform.object.position.y, transform.object.position.z];
+    obj.transform.rotation = [
+      THREE.MathUtils.radToDeg(transform.object.rotation.x),
+      THREE.MathUtils.radToDeg(transform.object.rotation.y),
+      THREE.MathUtils.radToDeg(transform.object.rotation.z)
+    ];
+    obj.transform.scale = [transform.object.scale.x, transform.object.scale.y, transform.object.scale.z];
+  }
   updateCoordInputs();
 });
 
@@ -358,7 +420,17 @@ function activateSlot(slot) {
   if (transformMode === null) {
     transform.detach();
   }
-  if (!slot || slot.selectedObjectIndex === -1 || slot.hidden) {
+  if (!slot) {
+    if (transformMode !== null) {
+      transform.attach(viewPivot);
+      transform.enabled = true;
+    } else {
+      transform.detach();
+    }
+    updateCoordInputs();
+    return;
+  }
+  if (slot.selectedObjectIndex === -1 || slot.hidden) {
     transform.detach();
     updateCoordInputs();
     return;
@@ -421,16 +493,24 @@ function handleSceneClick(event) {
 }
 
 // UI callbacks
-const slotCallbacks = {
-  onSelect(index) {
-    state.currentSlotIndex = index;
-    const stepIdx = state.steps.findIndex(st=>st.id===state.slots[index].stepId);
-    if(stepIdx!==-1) state.currentStepIndex = stepIdx;
+function selectSlot(index){
+  if(index==='view'){
+    state.currentSlotIndex = -1;
     renderUI();
-    activateSlot(state.currentSlot);
-    const el = slotListEl.children[state.slots.filter(s=>s.stepId===state.currentStep.id).indexOf(state.currentSlot)];
-    if (el) el.scrollIntoView({ block: 'nearest' });
-  },
+    activateSlot(null);
+    return;
+  }
+  state.currentSlotIndex = index;
+  const stepIdx = state.steps.findIndex(st=>st.id===state.slots[index].stepId);
+  if(stepIdx!==-1) state.currentStepIndex = stepIdx;
+  renderUI();
+  activateSlot(state.currentSlot);
+  const el = slotListEl.children[state.slots.filter(s=>s.stepId===state.currentStep.id).indexOf(state.currentSlot)+1];
+  if (el) el.scrollIntoView({ block: 'nearest' });
+}
+
+const slotCallbacks = {
+  onSelect: selectSlot,
   onDelete(id) {
     const mesh = meshes[id];
     if (mesh) {
@@ -440,7 +520,7 @@ const slotCallbacks = {
     }
     state.removeSlot(id);
     renderUI();
-    activateSlot(state.currentSlot);
+    if(state.currentSlotIndex===-1) activateSlot(null); else activateSlot(state.currentSlot);
   },
   onToggleHide(slot) {
     slot.hidden = !slot.hidden;
@@ -531,6 +611,23 @@ importInput.addEventListener('change', async e => {
 stepsBtn.addEventListener('click', () => {
   openStepsModal(stepsModal, state, renderUI);
 });
+
+viewBtn.addEventListener('click', () => {
+  viewVert.value = state.viewPoint.vertical;
+  viewHoriz.value = state.viewPoint.horizontal;
+  viewDist.value = state.viewPoint.maxDistance;
+  viewMove.checked = state.viewPoint.allowMovement;
+  viewModal.style.display='block';
+});
+viewSettingsBtn.addEventListener('click', ()=>viewBtn.click());
+saveViewBtn.addEventListener('click', ()=>{
+  state.viewPoint.vertical = parseFloat(viewVert.value)||0;
+  state.viewPoint.horizontal = parseFloat(viewHoriz.value)||0;
+  state.viewPoint.maxDistance = parseFloat(viewDist.value)||0;
+  state.viewPoint.allowMovement = viewMove.checked;
+  viewModal.style.display='none';
+});
+closeViewBtn.addEventListener('click', ()=>{viewModal.style.display='none';});
 
 function changeStep(delta){
   const len = state.steps.length;
@@ -746,6 +843,7 @@ function renderUI(){
   }
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
   textButtonsChk.checked = state.currentSlot?.textButtons || false;
+  updatePanels();
 }
 
 renderUI();

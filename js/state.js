@@ -5,6 +5,14 @@ export class ConfiguratorState {
     this.currentSlotIndex = -1;
     this.currentStepIndex = 0;
     this.environment = null;
+    this.viewPoint = {
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      vertical: 0,
+      horizontal: 0,
+      maxDistance: 0,
+      allowMovement: false
+    };
     const def = this._createVariant('Variant 1');
     this.variants.push(def);
   }
@@ -166,6 +174,18 @@ export class ConfiguratorState {
 
   async importJSON(data, fetchDetails){
     this.variants=[];
+    if(data.viewPoint){
+      this.viewPoint = {
+        position: data.viewPoint.position || [0,0,0],
+        rotation: data.viewPoint.rotation || [0,0,0],
+        vertical: data.viewPoint.vertical || 0,
+        horizontal: data.viewPoint.horizontal || 0,
+        maxDistance: data.viewPoint.maxDistance || 0,
+        allowMovement: !!data.viewPoint.allowMovement
+      };
+    } else {
+      this.viewPoint = { position:[0,0,0], rotation:[0,0,0], vertical:0, horizontal:0, maxDistance:0, allowMovement:false };
+    }
     if(data.variants){
       for(const [vid,vdata] of Object.entries(data.variants)){
         const variant=this._createVariant(vdata.name||'Variant');
@@ -224,6 +244,14 @@ export class ConfiguratorState {
     });
     const out={version:2,variants:variantsOut};
     if(this.environment){ out.environment={uuid:this.environment.uuid,position:this.environment.transform.position,rotation:this.environment.transform.rotation,scale:this.environment.transform.scale}; }
+    out.viewPoint = {
+      position: this.viewPoint.position,
+      rotation: this.viewPoint.rotation,
+      vertical: this.viewPoint.vertical,
+      horizontal: this.viewPoint.horizontal,
+      maxDistance: this.viewPoint.maxDistance,
+      allowMovement: this.viewPoint.allowMovement
+    };
     return JSON.stringify(out,null,2);
   }
 }

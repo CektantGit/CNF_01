@@ -102,6 +102,36 @@ let pointerDown = null;
 let pointerMoved = false;
 let hovered = null;
 let envMesh = null;
+function applyViewPoint(){
+  const vp = state.viewPoint;
+  controls.target.set(vp.position[0], vp.position[1], vp.position[2]);
+  const offset = new THREE.Vector3(0,1,3);
+  const euler = new THREE.Euler(
+    THREE.MathUtils.degToRad(vp.rotation[0]),
+    THREE.MathUtils.degToRad(vp.rotation[1]),
+    THREE.MathUtils.degToRad(vp.rotation[2])
+  );
+  offset.applyEuler(euler);
+  camera.position.set(vp.position[0]+offset.x, vp.position[1]+offset.y, vp.position[2]+offset.z);
+  if(vp.vertical>0){
+    controls.minPolarAngle=0;
+    controls.maxPolarAngle=THREE.MathUtils.degToRad(vp.vertical);
+  } else {
+    controls.minPolarAngle=0;
+    controls.maxPolarAngle=Math.PI;
+  }
+  if(vp.horizontal>0){
+    const r=THREE.MathUtils.degToRad(vp.horizontal);
+    controls.minAzimuthAngle=-r;
+    controls.maxAzimuthAngle=r;
+  } else {
+    controls.minAzimuthAngle=-Infinity;
+    controls.maxAzimuthAngle=Infinity;
+  }
+  controls.maxDistance = vp.maxDistance>0?vp.maxDistance:Infinity;
+  controls.enablePan = vp.allowMovement;
+  controls.update();
+}
 
 function renderUI(){
   renderVariants(variantBar, state, selectVariant);
@@ -367,6 +397,7 @@ async function handleImport(file) {
 
   await state.loadConfig(data, fetchObjectDetails);
   await loadAll();
+  applyViewPoint();
 }
 
 importBtn.addEventListener('click', () => importInput.click());

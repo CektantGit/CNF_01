@@ -62,6 +62,7 @@
         <button id="exportBtn">Export JSON</button>
         <button id="importBtn">Import JSON</button>
         <button id="stepsBtn">Steps</button>
+        <button id="viewBtn" style="display:none">Setting view</button>
         <input type="file" id="importInput" accept="application/json" style="display:none" />
       </div>
       <button id="outlineBtn" class="action-btn">Outline</button>
@@ -77,6 +78,7 @@
         <label><input type="checkbox" id="textButtons"> Button text</label>
         <button id="slotSettings" class="action-btn">Settings</button>
       </div>
+      <div id="viewActions" style="display:none"><button id="viewSettings" class="action-btn">Setting view</button></div>
       <div id="objects"></div>
     </div>
   </div>
@@ -114,6 +116,16 @@
       <button id="saveVar" class="action-btn">Save</button>
     </div>
     <button id="closeVar">Close</button>
+  </div>
+  <div id="viewModal">
+    <div class="modal-box">
+      <label>Vertical angle <input type="number" id="viewVert"/></label>
+      <label>Horizontal angle <input type="number" id="viewHoriz"/></label>
+      <label>Max distance <input type="number" id="viewDist"/></label>
+      <label><input type="checkbox" id="viewMove"> Allow movement</label>
+      <button id="saveView" class="action-btn">Save</button>
+    </div>
+    <button id="closeView">Close</button>
   </div>
   <div id="loadingOverlay">
     <div class="loading-box">

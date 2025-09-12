@@ -6,6 +6,7 @@ export class ViewerState {
     this.steps = [];
     this.environment = null;
     this.currentStepIndex = 0;
+    this.viewPoint = { position:[0,0,0], rotation:[0,0,0], vertical:0, horizontal:0, maxDistance:0, allowMovement:false };
   }
 
   async _buildVariant(src, fetchDetails, fallbackName) {
@@ -94,6 +95,18 @@ export class ViewerState {
           mesh: null
         };
       }
+    }
+    if(data.viewPoint){
+      this.viewPoint={
+        position:data.viewPoint.position||[0,0,0],
+        rotation:data.viewPoint.rotation||[0,0,0],
+        vertical:data.viewPoint.vertical||0,
+        horizontal:data.viewPoint.horizontal||0,
+        maxDistance:data.viewPoint.maxDistance||0,
+        allowMovement:!!data.viewPoint.allowMovement
+      };
+    } else {
+      this.viewPoint={position:[0,0,0],rotation:[0,0,0],vertical:0,horizontal:0,maxDistance:0,allowMovement:false};
     }
   }
 
