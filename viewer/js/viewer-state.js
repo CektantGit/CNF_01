@@ -52,7 +52,7 @@ export class ViewerState {
           name: details.name,
           materials: details.materials || [],
           selectedMaterial: 0,
-          variationNames: obj.variationNames || (details.materials || []).map(m => m.name),
+          colorNames: obj.colorNames || obj.variationNames || (details.materials || []).map(m => m.name),
           transform: {
             position: obj.position || [0, 0, 0],
             rotation: obj.rotation || [0, 0, 0],

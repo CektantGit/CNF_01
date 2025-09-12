@@ -2,6 +2,7 @@ function fitButtonText(btn){
   const base=14;
   btn.style.fontSize=base+'px';
   const max=btn.clientWidth*0.85;
+  if(!max) return; // skip when button has no layout yet
   const canvas=fitButtonText._c||(fitButtonText._c=document.createElement('canvas'));
   const ctx=canvas.getContext('2d');
   const style=getComputedStyle(btn);
@@ -80,7 +81,7 @@ export function renderSlots(container, state, onSelect){
           const btn=document.createElement('button');
           btn.className='variant-btn text-option';
           if(slot.selectedIndex===oIdx && obj.selectedMaterial===mIdx) btn.classList.add('selected');
-          btn.textContent = obj.variationNames?.[mIdx] || mat.name;
+          btn.textContent = obj.colorNames?.[mIdx] || mat.name;
           const slotIndex = state.slots.indexOf(slot);
           btn.addEventListener('click',()=>onSelect(slotIndex,oIdx,mIdx));
           list.appendChild(btn);

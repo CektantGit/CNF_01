@@ -51,7 +51,7 @@ export class ConfiguratorState {
         name: o.name,
         materials: o.materials,
         selectedMaterial: o.selectedMaterial,
-        variationNames: [...(o.variationNames || o.materials.map(m=>m.name))],
+        colorNames: [...(o.colorNames || o.materials.map(m=>m.name))],
         transform: {
           position: [...o.transform.position],
           rotation: [...o.transform.rotation],
@@ -163,7 +163,7 @@ export class ConfiguratorState {
       name: objectData.name,
       materials: objectData.materials || [],
       selectedMaterial: 0,
-      variationNames: (objectData.materials || []).map(m=>m.name),
+      colorNames: (objectData.materials || []).map(m=>m.name),
       transform: { position: [0,0,0], rotation:[0,0,0], scale:[1,1,1] }
     };
     this.currentSlot.objects.push(obj);
@@ -219,7 +219,7 @@ export class ConfiguratorState {
           const objects=[];
           for(const objData of slotData.objects||[]){
             const det=await fetchDetails(objData.uuid); if(!det) continue;
-            objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,variationNames:objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
+            objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,colorNames:objData.colorNames||objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
           }
           variant.slots.push({id:sid,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,stepId:slotData.step||variant.steps[0].id});
         }
@@ -246,7 +246,7 @@ export class ConfiguratorState {
         const objects=[];
         for(const objData of slotData.objects||[]){
           const det=await fetchDetails(objData.uuid); if(!det) continue;
-          objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,variationNames:objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
+          objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,colorNames:objData.colorNames||objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
         }
         variant.slots.push({id,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,stepId:slotData.step||variant.steps[0].id});
       }
@@ -271,7 +271,7 @@ export class ConfiguratorState {
       variant.steps.forEach(step=>{stepsOut[step.id]={name:step.name,index:step.index};});
       const slotsOut={};
       variant.slots.forEach(slot=>{
-        slotsOut[slot.id]={name:slot.name,canBeEmpty:slot.canBeEmpty,textButtons:slot.textButtons,step:slot.stepId,objects:slot.objects.map(o=>({uuid:o.uuid,position:o.transform.position,rotation:o.transform.rotation,scale:o.transform.scale,variationNames:o.variationNames}))};
+        slotsOut[slot.id]={name:slot.name,canBeEmpty:slot.canBeEmpty,textButtons:slot.textButtons,step:slot.stepId,objects:slot.objects.map(o=>({uuid:o.uuid,position:o.transform.position,rotation:o.transform.rotation,scale:o.transform.scale,colorNames:o.colorNames}))};
       });
       const out={name:variant.name,steps:stepsOut,slots:slotsOut,viewPoint:{
         position:variant.viewPoint.position,

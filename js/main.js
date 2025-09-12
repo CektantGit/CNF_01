@@ -861,7 +861,7 @@ function renderVarModal(slot){
       label.textContent=`${obj.name} - ${mat.name}`;
       const input=document.createElement('input');
       input.type='text';
-      input.value=obj.variationNames?.[mIdx] || `${obj.name} ${mat.name}`;
+      input.value=obj.colorNames?.[mIdx] || `${obj.name} ${mat.name}`;
       input.dataset.idx=`${oIdx}-${mIdx}`;
       row.appendChild(label);
       row.appendChild(input);
@@ -896,8 +896,8 @@ saveVarBtn.addEventListener('click', () => {
   if (!slot) { varModal.style.display = 'none'; return; }
   varList.querySelectorAll('input').forEach(inp => {
     const [oIdx, mIdx] = inp.dataset.idx.split('-').map(Number);
-    if (!slot.objects[oIdx].variationNames) slot.objects[oIdx].variationNames = [];
-    slot.objects[oIdx].variationNames[mIdx] = inp.value;
+    if (!slot.objects[oIdx].colorNames) slot.objects[oIdx].colorNames = [];
+    slot.objects[oIdx].colorNames[mIdx] = inp.value;
   });
   varModal.style.display = 'none';
 });
