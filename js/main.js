@@ -360,11 +360,8 @@ function loadEnvironment(env){
         ch.material = dm;
       }
     });
-    // expand slightly on X to avoid z-fighting and shrink on Z so depth copy
-    // doesn't occlude distant objects
-    envDepthMesh.scale.x *= 1.001;
-    envDepthMesh.scale.z *= 0.9;
     envDepthMesh.userData.noExport = true;
+    envDepthMesh.renderOrder = -1;
     envMesh.position.fromArray(env.transform.position);
     envMesh.rotation.set(
       THREE.MathUtils.degToRad(env.transform.rotation[0]),
@@ -372,6 +369,13 @@ function loadEnvironment(env){
       THREE.MathUtils.degToRad(env.transform.rotation[2])
     );
     envMesh.scale.fromArray(env.transform.scale);
+    envDepthMesh.position.copy(envMesh.position);
+    envDepthMesh.rotation.copy(envMesh.rotation);
+    envDepthMesh.scale.copy(envMesh.scale);
+    // expand slightly on X to avoid z-fighting and shrink on Z so depth copy
+    // doesn't occlude distant objects
+    envDepthMesh.scale.x *= 1.001;
+    envDepthMesh.scale.z *= 0.85;
     envMesh.userData.envObj = env;
     scene.add(envDepthMesh);
     scene.add(envMesh);

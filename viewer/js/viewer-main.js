@@ -320,12 +320,8 @@ async function loadAll(){
           ch.material = dm;
         }
       });
-      // expand slightly on X to avoid z-fighting and shrink on Z so depth copy
-      // doesn't occlude distant objects when viewing from afar
-      envDepthMesh.scale.x *= 1.001;
-      envDepthMesh.scale.z *= 0.9;
-      envDepthMesh.renderOrder = -1;
       envDepthMesh.userData.noExport = true;
+      envDepthMesh.renderOrder = -1;
       envMesh.traverse(ch=>{
         if(ch.isMesh){
           const edges = new THREE.EdgesGeometry(ch.geometry);
@@ -344,6 +340,13 @@ async function loadAll(){
       envMesh.position.fromArray(state.environment.transform.position);
       envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
       envMesh.scale.fromArray(state.environment.transform.scale);
+      envDepthMesh.position.copy(envMesh.position);
+      envDepthMesh.rotation.copy(envMesh.rotation);
+      envDepthMesh.scale.copy(envMesh.scale);
+      // expand slightly on X to avoid z-fighting and shrink on Z so depth copy
+      // doesn't occlude distant objects when viewing from afar
+      envDepthMesh.scale.x *= 1.001;
+      envDepthMesh.scale.z *= 0.85;
       scene.add(envDepthMesh);
       scene.add(envMesh);
     }
