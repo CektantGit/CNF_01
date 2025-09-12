@@ -165,7 +165,6 @@ async function loadMesh(obj, overlay = false, progressCb) {
       url,
       (gltf) => {
         obj.mesh = gltf.scene;
-        if (overlay) hideLoading();
         resolve(obj.mesh);
       },
       (evt) => {
@@ -178,7 +177,6 @@ async function loadMesh(obj, overlay = false, progressCb) {
       },
       (err) => {
         console.error(err);
-        if (overlay) hideLoading();
         resolve(null);
       }
     );
@@ -187,27 +185,32 @@ async function loadMesh(obj, overlay = false, progressCb) {
 
 async function selectObject(slotIdx, objIdx, matIdx) {
   const slot = state.slots[slotIdx];
-  if (slot.currentMesh) {
-    scene.remove(slot.currentMesh);
-    slot.currentMesh = null;
-  }
+  const previousMesh = slot.currentMesh;
+  const previousIndex = slot.selectedIndex;
   slot.selectedIndex = objIdx;
+
   if (objIdx === -1) {
+    if (previousMesh) scene.remove(previousMesh);
+    slot.currentMesh = null;
     renderUI();
+    hideLoading();
     return;
   }
+
   const obj = slot.objects[objIdx];
-  if (typeof matIdx === 'number') {
-    if (obj.selectedMaterial !== matIdx) {
-      obj.selectedMaterial = matIdx;
-      obj.mesh = null;
-    }
+  if (typeof matIdx === 'number' && obj.selectedMaterial !== matIdx) {
+    obj.selectedMaterial = matIdx;
+    obj.mesh = null;
   }
+
   const mesh = await loadMesh(obj, !obj.mesh);
   if (!mesh) {
+    slot.selectedIndex = previousIndex;
     renderUI();
+    hideLoading();
     return;
   }
+
   const inst = mesh.clone();
   inst.position.fromArray(obj.transform.position);
   inst.rotation.set(
@@ -218,7 +221,9 @@ async function selectObject(slotIdx, objIdx, matIdx) {
   inst.userData.objIdx = objIdx;
   slot.currentMesh = inst;
   scene.add(inst);
+  if (previousMesh) scene.remove(previousMesh);
   renderUI();
+  hideLoading();
 }
 
 async function loadAll(){
@@ -248,7 +253,7 @@ async function loadAll(){
   const totalBytes = sizes.reduce((a,b)=>a+b,0);
   let loadedBytes = 0;
   let sizeIdx = 0;
-  if(totalBytes>0) showLoading(0, true); else hideLoading();
+  if(totalBytes>0) showLoading(0, true);
 
   for(const t of tasks){
     if(!t.obj.mesh){
@@ -289,18 +294,19 @@ async function loadAll(){
       scene.add(inst);
     }
   }
-  if(totalBytes>0) hideLoading();
   renderUI();
 }
 
 async function selectVariant(idx){
   if(idx===state.currentVariantIndex) return;
+  showLoading(0, true);
   state.slots.forEach(s=>{
     if(s.currentMesh){scene.remove(s.currentMesh); s.currentMesh=null;}
   });
   state.setVariant(idx);
   await loadAll();
   if(state.viewPoint.enabled) applyViewPoint(); else resetViewPoint();
+  hideLoading();
 }
 
 function handleSceneClick(event) {
@@ -359,6 +365,7 @@ async function handleImport(file) {
   await state.loadConfig(data, fetchObjectDetails);
   await loadAll();
   if(state.viewPoint.enabled) applyViewPoint(); else resetViewPoint();
+  hideLoading();
 }
 
 importBtn.addEventListener('click', () => importInput.click());
@@ -392,6 +399,7 @@ arBtn.addEventListener('click', () => {
     } else {
       resetViewPoint();
     }
+    hideLoading();
   } catch (err) {
     console.error('Default config load failed', err);
     hideLoading();
