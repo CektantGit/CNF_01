@@ -125,7 +125,7 @@ const outlinePass = new OutlinePass(
 );
 outlinePass.edgeStrength = 2;
 outlinePass.edgeThickness = 1;
-outlinePass.visibleEdgeColor.set(0x008efa);
+outlinePass.visibleEdgeColor.set(0x888888);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 // ensure the outline blends normally over the scene
 outlinePass.overlayMaterial.blending = THREE.NormalBlending;
@@ -236,7 +236,7 @@ function handleResize(){
 window.addEventListener('resize', handleResize);
 
 const meshes = {};
-let envMesh = null, envOutline = null;
+let envMesh = null;
 let envLocked = true;
 let transformMode = null;
 
@@ -325,10 +325,6 @@ function hideLoading(){
 function loadEnvironment(env){
   if(envMesh){
     if(transform.object===envMesh) transform.detach();
-    if(envOutline){
-      envMesh.remove(envOutline);
-      envOutline=null;
-    }
     scene.remove(envMesh);
     envMesh=null;
   }
@@ -354,7 +350,6 @@ function loadEnvironment(env){
       }
     });
     envMesh.position.fromArray(env.transform.position);
-    const outlineScaleX = 1.01;
     envMesh.rotation.set(
       THREE.MathUtils.degToRad(env.transform.rotation[0]),
       THREE.MathUtils.degToRad(env.transform.rotation[1]),
@@ -362,20 +357,6 @@ function loadEnvironment(env){
     );
     envMesh.scale.fromArray(env.transform.scale);
     envMesh.userData.envObj = env;
-    // build static outline slightly wider on X
-    envOutline = new THREE.Group();
-    envMesh.traverse(ch=>{
-      if(ch.isMesh){
-        const edge = new THREE.EdgesGeometry(ch.geometry);
-        const line = new THREE.LineSegments(edge, new THREE.LineBasicMaterial({color:0x000000}));
-        line.position.copy(ch.position);
-        line.rotation.copy(ch.rotation);
-        line.scale.copy(ch.scale);
-        envOutline.add(line);
-      }
-    });
-    envOutline.scale.x *= outlineScaleX;
-    envMesh.add(envOutline);
     scene.add(envMesh);
     baseOutlines.push(envMesh);
     setHovered(hovered);
@@ -389,7 +370,6 @@ function reloadScene(){
   Object.keys(meshes).forEach(k=>delete meshes[k]);
   if(envMesh){
     if(transform.object===envMesh) transform.detach();
-    if(envOutline){ envMesh.remove(envOutline); envOutline=null; }
     scene.remove(envMesh); envMesh=null;
   }
   baseOutlines.length = 0;
@@ -801,7 +781,6 @@ removeEnvBtn.addEventListener('click',()=>{
   state.removeEnvironment();
   if(envMesh){
     if(transform.object===envMesh) transform.detach();
-    if(envOutline){ envMesh.remove(envOutline); envOutline=null; }
     scene.remove(envMesh); envMesh=null;
   }
   baseOutlines.length = 0;

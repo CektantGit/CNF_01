@@ -103,7 +103,7 @@ const pointer = new THREE.Vector2();
 let pointerDown = null;
 let pointerMoved = false;
 let hovered = null;
-let envMesh = null, envOutline = null;
+let envMesh = null;
 const baseOutlines = [];
 function applyViewPoint(){
   const vp = state.viewPoint;
@@ -292,7 +292,6 @@ function setHovered(obj) {
 
 async function loadAll(){
   if(envMesh){
-    if(envOutline){ envMesh.remove(envOutline); envOutline=null; }
     scene.remove(envMesh); envMesh=null;
   }
   baseOutlines.length = 0;
@@ -316,23 +315,8 @@ async function loadAll(){
         }
       });
       envMesh.position.fromArray(state.environment.transform.position);
-      const outlineScaleX = 1.01;
       envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
       envMesh.scale.fromArray(state.environment.transform.scale);
-      // build static outline slightly wider on X
-      envOutline = new THREE.Group();
-      envMesh.traverse(ch=>{
-        if(ch.isMesh){
-          const edge = new THREE.EdgesGeometry(ch.geometry);
-          const line = new THREE.LineSegments(edge, new THREE.LineBasicMaterial({color:0x000000}));
-          line.position.copy(ch.position);
-          line.rotation.copy(ch.rotation);
-          line.scale.copy(ch.scale);
-          envOutline.add(line);
-        }
-      });
-      envOutline.scale.x *= outlineScaleX;
-      envMesh.add(envOutline);
       scene.add(envMesh);
       baseOutlines.push(envMesh);
       setHovered(hovered);
