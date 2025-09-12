@@ -139,9 +139,10 @@ function renderUI(){
   renderSlots(slotsContainer, state, selectObject);
 }
 
-function showLoading(r, initial = false) {
+function showLoading(r, initial = false, message = 'Loading') {
   const overlay = document.getElementById('loadingOverlay');
   const bar = document.getElementById('progressBar');
+  overlay.querySelector('p').textContent = message;
   if (initial) overlay.classList.add('white');
   overlay.style.display = 'flex';
   bar.style.width = Math.floor(r * 100) + '%';
@@ -379,8 +380,10 @@ nextStepBtn.addEventListener('click',()=>{
   renderUI();
 });
 
-arBtn.addEventListener('click', () => {
-  viewInAR(scene);
+arBtn.addEventListener('click', async () => {
+  showLoading(0, false, 'Prepare AR scene');
+  await viewInAR(scene, (r) => showLoading(r, false, 'Prepare AR scene'));
+  hideLoading();
 });
 
 (async () => {

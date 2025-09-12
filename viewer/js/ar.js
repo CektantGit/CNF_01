@@ -33,9 +33,10 @@ function fixTexture(tex) {
 }
 
 // Export the current scene and launch model-viewer's AR mode.
-export async function viewInAR(scene) {
+export async function viewInAR(scene, progressCb) {
   const exportScene = new THREE.Group();
   scene.updateMatrixWorld(true);
+  progressCb && progressCb(0);
 
   // Clone all meshes with world transforms and strip extra attributes.
   scene.traverse(obj => {
@@ -106,7 +107,35 @@ export async function viewInAR(scene) {
 
   const exporter = new GLTFExporter();
   const glbBuffer = await exporter.parseAsync(exportScene, { binary: true });
+  progressCb && progressCb(0.5);
   const glbBlob = new Blob([glbBuffer], { type: 'model/gltf-binary' });
+
+  // iOS Quick Look via anchor
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS) {
+    try {
+      const usdzExporter = new USDZExporter();
+      const arraybuffer = await usdzExporter.parseAsync(exportScene);
+      progressCb && progressCb(0.9);
+      if (arraybuffer) {
+        const usdzFile = new File([arraybuffer], 'scene.usdz', {
+          type: 'model/vnd.usdz+zip'
+        });
+        const usdzUrl = URL.createObjectURL(usdzFile);
+        const link = document.createElement('a');
+        link.rel = 'ar';
+        link.href = usdzUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(usdzUrl), 10000);
+      }
+    } catch (err) {
+      console.error('USDZ export failed', err);
+    }
+    progressCb && progressCb(1);
+    return;
+  }
 
   const modelViewer = document.getElementById('ar-viewer');
   if (!modelViewer) {
@@ -116,26 +145,7 @@ export async function viewInAR(scene) {
 
   const glbUrl = URL.createObjectURL(glbBlob);
   modelViewer.setAttribute('src', glbUrl);
-
-  // On iOS the <model-viewer> component expects an ios-src pointing to a USDZ
-  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-    try {
-      const usdzExporter = new USDZExporter();
-      const arraybuffer = await usdzExporter.parseAsync(exportScene);
-      if (arraybuffer) {
-        const usdzFile = new File([arraybuffer], 'scene.usdz', {
-          type: 'model/vnd.usdz+zip'
-        });
-        const usdzUrl = URL.createObjectURL(usdzFile);
-        modelViewer.setAttribute('ios-src', usdzUrl);
-      }
-    } catch (err) {
-      console.error('USDZ export failed', err);
-    }
-  }
-
   await modelViewer.updateComplete;
-
   try {
     await modelViewer.activateAR();
   } catch (err) {
@@ -146,4 +156,5 @@ export async function viewInAR(scene) {
     link.click();
     document.body.removeChild(link);
   }
+  progressCb && progressCb(1);
 }
