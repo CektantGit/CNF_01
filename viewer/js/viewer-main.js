@@ -38,6 +38,8 @@ container.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 camera.position.set(0, 1, 3);
 controls.update();
+const defaultCamPos = camera.position.clone();
+const defaultTarget = controls.target.clone();
 
 const pmrem = new THREE.PMREMGenerator(renderer);
 new RGBELoader().load(
@@ -104,6 +106,7 @@ let hovered = null;
 let envMesh = null;
 function applyViewPoint(){
   const vp = state.viewPoint;
+  if(!vp.enabled){ resetViewPoint(); return; }
   controls.target.set(vp.position[0], vp.position[1], vp.position[2]);
   const offset = new THREE.Vector3(0,1,3);
   const euler = new THREE.Euler(
@@ -130,6 +133,18 @@ function applyViewPoint(){
   }
   controls.maxDistance = vp.maxDistance>0?vp.maxDistance:Infinity;
   controls.enablePan = vp.allowMovement;
+  controls.update();
+}
+
+function resetViewPoint(){
+  controls.target.copy(defaultTarget);
+  camera.position.copy(defaultCamPos);
+  controls.minPolarAngle=0;
+  controls.maxPolarAngle=Math.PI;
+  controls.minAzimuthAngle=-Infinity;
+  controls.maxAzimuthAngle=Infinity;
+  controls.maxDistance=Infinity;
+  controls.enablePan=true;
   controls.update();
 }
 
@@ -321,6 +336,7 @@ async function selectVariant(idx){
   setHovered(null);
   state.setVariant(idx);
   await loadAll();
+  if(state.viewPoint.enabled) applyViewPoint(); else resetViewPoint();
 }
 
 function handleHover(event) {
@@ -397,7 +413,7 @@ async function handleImport(file) {
 
   await state.loadConfig(data, fetchObjectDetails);
   await loadAll();
-  applyViewPoint();
+  if(state.viewPoint.enabled) applyViewPoint(); else resetViewPoint();
 }
 
 importBtn.addEventListener('click', () => importInput.click());

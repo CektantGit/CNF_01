@@ -63,7 +63,16 @@ export class ViewerState {
       }
       slots.push(slot);
     }
-    return { id: src.id || crypto.randomUUID(), name: src.name || fallbackName, steps, slots };
+    const viewPoint = {
+      position: src.viewPoint?.position || [0,0,0],
+      rotation: src.viewPoint?.rotation || [0,0,0],
+      vertical: src.viewPoint?.vertical || 0,
+      horizontal: src.viewPoint?.horizontal || 0,
+      maxDistance: src.viewPoint?.maxDistance || 0,
+      allowMovement: !!src.viewPoint?.allowMovement,
+      enabled: !!src.viewPoint?.enabled
+    };
+    return { id: src.id || crypto.randomUUID(), name: src.name || fallbackName, steps, slots, viewPoint };
   }
 
   async loadConfig(data, fetchDetails) {
@@ -96,18 +105,7 @@ export class ViewerState {
         };
       }
     }
-    if(data.viewPoint){
-      this.viewPoint={
-        position:data.viewPoint.position||[0,0,0],
-        rotation:data.viewPoint.rotation||[0,0,0],
-        vertical:data.viewPoint.vertical||0,
-        horizontal:data.viewPoint.horizontal||0,
-        maxDistance:data.viewPoint.maxDistance||0,
-        allowMovement:!!data.viewPoint.allowMovement
-      };
-    } else {
-      this.viewPoint={position:[0,0,0],rotation:[0,0,0],vertical:0,horizontal:0,maxDistance:0,allowMovement:false};
-    }
+    this.viewPoint = { ...this.variants[0].viewPoint };
   }
 
   setVariant(index) {
@@ -121,6 +119,7 @@ export class ViewerState {
       objects: s.objects.map(o => ({ ...o, mesh: null }))
     }));
     this.currentStepIndex = 0;
+    this.viewPoint = { ...v.viewPoint };
   }
 
   get currentStep() {

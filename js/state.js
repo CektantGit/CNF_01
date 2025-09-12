@@ -5,14 +5,6 @@ export class ConfiguratorState {
     this.currentSlotIndex = -1;
     this.currentStepIndex = 0;
     this.environment = null;
-    this.viewPoint = {
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      vertical: 0,
-      horizontal: 0,
-      maxDistance: 0,
-      allowMovement: false
-    };
     const def = this._createVariant('Variant 1');
     this.variants.push(def);
   }
@@ -20,10 +12,26 @@ export class ConfiguratorState {
   get currentVariant() { return this.variants[this.currentVariantIndex]; }
   get steps() { return this.currentVariant.steps; }
   get slots() { return this.currentVariant.slots; }
+  get viewPoint() { return this.currentVariant.viewPoint; }
 
   _createVariant(name) {
     const step = { id: crypto.randomUUID(), name: 'Step 1', index: 0 };
-    return { id: crypto.randomUUID(), name, steps: [step], slots: [] };
+    return {
+      id: crypto.randomUUID(),
+      name,
+      steps: [step],
+      slots: [],
+      viewPoint: {
+        position: [0,0,0],
+        rotation: [0,0,0],
+        vertical: 0,
+        horizontal: 0,
+        maxDistance: 0,
+        allowMovement: false,
+        enabled: false,
+        hidden: false
+      }
+    };
   }
 
   _cloneVariant(src, name) {
@@ -54,7 +62,17 @@ export class ConfiguratorState {
       textButtons: s.textButtons || false,
       stepId: stepMap.get(s.stepId) || steps[0].id
     }));
-    return { id: crypto.randomUUID(), name, steps, slots };
+    const viewPoint = {
+      position: [...src.viewPoint.position],
+      rotation: [...src.viewPoint.rotation],
+      vertical: src.viewPoint.vertical,
+      horizontal: src.viewPoint.horizontal,
+      maxDistance: src.viewPoint.maxDistance,
+      allowMovement: src.viewPoint.allowMovement,
+      enabled: src.viewPoint.enabled || false,
+      hidden: src.viewPoint.hidden || false
+    };
+    return { id: crypto.randomUUID(), name, steps, slots, viewPoint };
   }
 
   addVariant(name = `Variant ${this.variants.length + 1}`) {
@@ -174,46 +192,54 @@ export class ConfiguratorState {
 
   async importJSON(data, fetchDetails){
     this.variants=[];
-    if(data.viewPoint){
-      this.viewPoint = {
-        position: data.viewPoint.position || [0,0,0],
-        rotation: data.viewPoint.rotation || [0,0,0],
-        vertical: data.viewPoint.vertical || 0,
-        horizontal: data.viewPoint.horizontal || 0,
-        maxDistance: data.viewPoint.maxDistance || 0,
-        allowMovement: !!data.viewPoint.allowMovement
-      };
-    } else {
-      this.viewPoint = { position:[0,0,0], rotation:[0,0,0], vertical:0, horizontal:0, maxDistance:0, allowMovement:false };
-    }
     if(data.variants){
       for(const [vid,vdata] of Object.entries(data.variants)){
         const variant=this._createVariant(vdata.name||'Variant');
         variant.id=vid;
+        variant.viewPoint={
+          position:vdata.viewPoint?.position||[0,0,0],
+          rotation:vdata.viewPoint?.rotation||[0,0,0],
+          vertical:vdata.viewPoint?.vertical||0,
+          horizontal:vdata.viewPoint?.horizontal||0,
+          maxDistance:vdata.viewPoint?.maxDistance||0,
+          allowMovement:!!vdata.viewPoint?.allowMovement,
+          enabled:!!vdata.viewPoint?.enabled,
+          hidden:!!vdata.viewPoint?.hidden
+        };
         variant.steps = Object.entries(vdata.steps||{}).map(([id,s])=>({id,name:s.name,index:s.index||0}));
         if(!variant.steps.length) variant.steps=[{id:crypto.randomUUID(),name:'Step 1',index:0}];
         variant.steps.sort((a,b)=>a.index-b.index);
         for(const [sid,slotData] of Object.entries(vdata.slots||{})){
           const objects=[];
           for(const objData of slotData.objects||[]){
-      const det=await fetchDetails(objData.uuid); if(!det) continue;
-      objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,variationNames:objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
-    }
-    variant.slots.push({id:sid,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,stepId:slotData.step||variant.steps[0].id});
-      }
+            const det=await fetchDetails(objData.uuid); if(!det) continue;
+            objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,variationNames:objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
+          }
+          variant.slots.push({id:sid,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,stepId:slotData.step||variant.steps[0].id});
+        }
         this.variants.push(variant);
       }
     } else {
       const variant=this._createVariant('Variant 1');
+      variant.viewPoint={
+        position:data.viewPoint?.position||[0,0,0],
+        rotation:data.viewPoint?.rotation||[0,0,0],
+        vertical:data.viewPoint?.vertical||0,
+        horizontal:data.viewPoint?.horizontal||0,
+        maxDistance:data.viewPoint?.maxDistance||0,
+        allowMovement:!!data.viewPoint?.allowMovement,
+        enabled:!!data.viewPoint?.enabled,
+        hidden:!!data.viewPoint?.hidden
+      };
       variant.steps = Object.entries(data.steps||{}).map(([id,s])=>({id,name:s.name,index:s.index||0}));
       if(!variant.steps.length) variant.steps=[{id:crypto.randomUUID(),name:'Step 1',index:0}];
       variant.steps.sort((a,b)=>a.index-b.index);
       for(const [id,slotData] of Object.entries(data.slots||{})){
         const objects=[];
         for(const objData of slotData.objects||[]){
-      const det=await fetchDetails(objData.uuid); if(!det) continue;
-      objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,variationNames:objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
-    }
+          const det=await fetchDetails(objData.uuid); if(!det) continue;
+          objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,variationNames:objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
+        }
         variant.slots.push({id,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,stepId:slotData.step||variant.steps[0].id});
       }
       this.variants.push(variant);
@@ -239,19 +265,20 @@ export class ConfiguratorState {
       variant.slots.forEach(slot=>{
         slotsOut[slot.id]={name:slot.name,canBeEmpty:slot.canBeEmpty,textButtons:slot.textButtons,step:slot.stepId,objects:slot.objects.map(o=>({uuid:o.uuid,position:o.transform.position,rotation:o.transform.rotation,scale:o.transform.scale,variationNames:o.variationNames}))};
       });
-      const out={name:variant.name,steps:stepsOut,slots:slotsOut};
+      const out={name:variant.name,steps:stepsOut,slots:slotsOut,viewPoint:{
+        position:variant.viewPoint.position,
+        rotation:variant.viewPoint.rotation,
+        vertical:variant.viewPoint.vertical,
+        horizontal:variant.viewPoint.horizontal,
+        maxDistance:variant.viewPoint.maxDistance,
+        allowMovement:variant.viewPoint.allowMovement,
+        enabled:variant.viewPoint.enabled,
+        hidden:variant.viewPoint.hidden
+      }};
       variantsOut[variant.id]=out;
     });
     const out={version:2,variants:variantsOut};
     if(this.environment){ out.environment={uuid:this.environment.uuid,position:this.environment.transform.position,rotation:this.environment.transform.rotation,scale:this.environment.transform.scale}; }
-    out.viewPoint = {
-      position: this.viewPoint.position,
-      rotation: this.viewPoint.rotation,
-      vertical: this.viewPoint.vertical,
-      horizontal: this.viewPoint.horizontal,
-      maxDistance: this.viewPoint.maxDistance,
-      allowMovement: this.viewPoint.allowMovement
-    };
     return JSON.stringify(out,null,2);
   }
 }

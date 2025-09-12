@@ -2,8 +2,18 @@ export function renderSlots(state, container, { onSelect, onDelete, onToggleHide
   container.innerHTML = '';
   const vp = document.createElement('li');
   vp.className = 'slot' + (state.currentSlotIndex === -1 ? ' selected' : '');
-  vp.textContent = 'Point view';
   vp.addEventListener('click', () => onSelect('view'));
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = 'Point view';
+  const hideBtn = document.createElement('button');
+  hideBtn.textContent = 'Hide';
+  hideBtn.className = 'hide-btn' + (state.viewPoint.hidden ? ' active' : '');
+  hideBtn.addEventListener('click', e => { e.stopPropagation(); onToggleHide('view'); });
+  const actions = document.createElement('div');
+  actions.className = 'slot-actions';
+  actions.appendChild(hideBtn);
+  vp.appendChild(nameSpan);
+  vp.appendChild(actions);
   container.appendChild(vp);
   state.slots.filter(s=>s.stepId===stepId).forEach((slot) => {
     const index = state.slots.indexOf(slot);
@@ -91,6 +101,14 @@ export function renderSlotsMobile(state, container, slotCallbacks, objectCallbac
   const sum=document.createElement('summary');
   sum.textContent='Point view';
   sum.addEventListener('click',e=>{slotCallbacks.onSelect('view');});
+  const actions=document.createElement('span');
+  actions.className='slot-actions';
+  const hide=document.createElement('button');
+  hide.textContent='Hide';
+  hide.className='hide-btn'+(state.viewPoint.hidden?' active':'');
+  hide.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onToggleHide('view');});
+  actions.appendChild(hide);
+  sum.appendChild(actions);
   vp.appendChild(sum);
   container.appendChild(vp);
   state.slots.filter(s=>s.stepId===stepId).forEach((slot)=>{

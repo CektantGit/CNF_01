@@ -71,6 +71,7 @@ const viewVert = document.getElementById('viewVert');
 const viewHoriz = document.getElementById('viewHoriz');
 const viewDist = document.getElementById('viewDist');
 const viewMove = document.getElementById('viewMove');
+const viewEnabled = document.getElementById('viewEnabled');
 const saveViewBtn = document.getElementById('saveView');
 const closeViewBtn = document.getElementById('closeView');
 outlineBtn.classList.add('active');
@@ -356,6 +357,7 @@ function reloadScene(){
     THREE.MathUtils.degToRad(state.viewPoint.rotation[1]),
     THREE.MathUtils.degToRad(state.viewPoint.rotation[2])
   );
+  viewPivot.visible = !state.viewPoint.hidden;
   if(viewPreview) applyViewPreview();
 }
 
@@ -569,6 +571,12 @@ const slotCallbacks = {
     if(state.currentSlotIndex===-1) activateSlot(null); else activateSlot(state.currentSlot);
   },
   onToggleHide(slot) {
+    if(slot==='view'){
+      state.viewPoint.hidden = !state.viewPoint.hidden;
+      viewPivot.visible = !state.viewPoint.hidden;
+      renderUI();
+      return;
+    }
     slot.hidden = !slot.hidden;
     const mesh = meshes[slot.id];
     if (slot.hidden) {
@@ -659,6 +667,7 @@ stepsBtn.addEventListener('click', () => {
 });
 
 viewBtn.addEventListener('click', () => {
+  viewEnabled.checked = state.viewPoint.enabled;
   viewVert.value = state.viewPoint.vertical;
   viewHoriz.value = state.viewPoint.horizontal;
   viewDist.value = state.viewPoint.maxDistance;
@@ -666,6 +675,7 @@ viewBtn.addEventListener('click', () => {
   viewModal.style.display='block';
 });
 saveViewBtn.addEventListener('click', ()=>{
+  state.viewPoint.enabled = viewEnabled.checked;
   state.viewPoint.vertical = parseFloat(viewVert.value)||0;
   state.viewPoint.horizontal = parseFloat(viewHoriz.value)||0;
   state.viewPoint.maxDistance = parseFloat(viewDist.value)||0;
