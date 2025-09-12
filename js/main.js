@@ -360,7 +360,10 @@ function loadEnvironment(env){
         ch.material = dm;
       }
     });
-    envDepthMesh.scale.multiplyScalar(1.001);
+    // expand slightly on X to avoid z-fighting and shrink on Z so depth copy
+    // doesn't occlude distant objects
+    envDepthMesh.scale.x *= 1.001;
+    envDepthMesh.scale.z *= 0.9;
     envDepthMesh.userData.noExport = true;
     envMesh.position.fromArray(env.transform.position);
     envMesh.rotation.set(

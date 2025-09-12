@@ -320,7 +320,10 @@ async function loadAll(){
           ch.material = dm;
         }
       });
+      // expand slightly on X to avoid z-fighting and shrink on Z so depth copy
+      // doesn't occlude distant objects when viewing from afar
       envDepthMesh.scale.x *= 1.001;
+      envDepthMesh.scale.z *= 0.9;
       envDepthMesh.renderOrder = -1;
       envDepthMesh.userData.noExport = true;
       envMesh.traverse(ch=>{
