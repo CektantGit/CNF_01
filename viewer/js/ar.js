@@ -104,12 +104,10 @@ export async function viewInAR(scene) {
 
   if (exportScene.children.length === 0) return;
 
-  const exporter = new GLTFExporter();
-  const glbBuffer = await exporter.parseAsync(exportScene, { binary: true });
-  const glbBlob = new Blob([glbBuffer], { type: 'model/gltf-binary' });
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isAndroid = /Android/.test(ua);
 
-  // iOS Quick Look via anchor
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   if (isIOS) {
     try {
       const usdzExporter = new USDZExporter();
@@ -131,24 +129,25 @@ export async function viewInAR(scene) {
     return;
   }
 
-  const base64 = await blobToBase64(glbBlob);
-  const dataUrl = `data:model/gltf-binary;base64,${base64}`;
-  const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(dataUrl)}&mode=ar_only&resizable=false#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;`;
-  const anchor = document.createElement('a');
-  anchor.href = intent;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-}
+  const exporter = new GLTFExporter();
+  const glbBuffer = await exporter.parseAsync(exportScene, { binary: true });
+  const glbBlob = new Blob([glbBuffer], { type: 'model/gltf-binary' });
 
-function blobToBase64(blob) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const data = reader.result;
-      const base64 = data.substring(data.indexOf(',') + 1);
-      resolve(base64);
-    };
-    reader.readAsDataURL(blob);
-  });
+  if (isAndroid) {
+    const modelViewer = document.getElementById('ar-viewer');
+    if (!modelViewer) return;
+    const glbUrl = URL.createObjectURL(glbBlob);
+    modelViewer.setAttribute('src', glbUrl);
+    await modelViewer.updateComplete;
+    modelViewer.activateAR();
+    setTimeout(() => URL.revokeObjectURL(glbUrl), 10000);
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(glbBlob);
+  link.download = 'scene.glb';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
