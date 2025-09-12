@@ -147,6 +147,7 @@ grid.visible = false;
 scene.add(grid);
 
 const viewPivot = new THREE.Mesh(new THREE.SphereGeometry(0.05), new THREE.MeshBasicMaterial({color:0xff0000}));
+viewPivot.userData.view = true;
 scene.add(viewPivot);
 viewPivot.position.fromArray(state.viewPoint.position);
 viewPivot.rotation.set(
@@ -503,7 +504,7 @@ function handleHover(event) {
   pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
-  const objs = [...Object.values(meshes)];
+  const objs = [...Object.values(meshes), viewPivot];
   if(envMesh && !envLocked) objs.push(envMesh);
   const intersect = raycaster.intersectObjects(objs, true)[0];
   let obj = intersect ? intersect.object : null;
@@ -516,16 +517,25 @@ function handleSceneClick(event) {
   pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
-  const objs2 = [...Object.values(meshes)];
+  const objs2 = [...Object.values(meshes), viewPivot];
   if(envMesh && !envLocked) objs2.push(envMesh);
   const intersect = raycaster.intersectObjects(objs2, true)[0];
   if (!intersect) return;
   let obj = intersect.object;
+  if(obj === viewPivot){
+    state.currentSlotIndex = -1;
+    renderUI();
+    if(transformMode!==null) transform.attach(viewPivot); else transform.detach();
+    transform.enabled = transformMode !== null;
+    updateCoordInputs();
+    return;
+  }
   while (obj && !obj.userData.slotId && !obj.userData.envObj) obj = obj.parent;
   if (!obj) return;
   if(obj.userData.envObj){
     if(envLocked) return;
     state.currentSlotIndex = -1;
+    renderUI();
     if(transformMode!==null) transform.attach(envMesh); else transform.detach();
     transform.enabled = transformMode !== null;
     updateCoordInputs();
