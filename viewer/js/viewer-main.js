@@ -2,14 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'OrbitControls';
 import { GLTFLoader } from 'GLTFLoader';
 import { RGBELoader } from 'RGBELoader';
-import { GLTFExporter } from 'GLTFExporter';
-import { USDZExporter } from 'USDZExporter';
-import { EffectComposer } from 'EffectComposer';
-import { RenderPass } from 'RenderPass';
-import { OutlinePass } from 'OutlinePass';
-import { ShaderPass } from 'ShaderPass';
-import { FXAAShader } from 'FXAAShader';
-import { OutputPass } from 'OutputPass';
+import { viewInAR } from './ar.js';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots, renderVariants } from './viewer-ui.js';
 import { fetchObjectDetails } from './viewer-api.js';
@@ -59,32 +52,10 @@ const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
 dirLight.position.set(5, 10, 7.5);
 scene.add(dirLight);
 
-// postprocessing for hover outline
-const composer = new EffectComposer(renderer);
-const renderPass = new RenderPass(scene, camera);
-composer.addPass(renderPass);
-const outlinePass = new OutlinePass(new THREE.Vector2(1, 1), scene, camera);
-outlinePass.edgeStrength = 3;
-outlinePass.edgeThickness = 12;
-outlinePass.visibleEdgeColor.set(0x888888);
-outlinePass.hiddenEdgeColor.set(0xffffff);
-// ensure the outline blends normally over the scene
-outlinePass.overlayMaterial.blending = THREE.NormalBlending;
-outlinePass.overlayMaterial.transparent = true;
-composer.addPass(outlinePass);
-const outputPass = new OutputPass();
-composer.addPass(outputPass);
-const effectFXAA = new ShaderPass(FXAAShader);
-effectFXAA.uniforms['resolution'].value.set(1 / container.clientWidth, 1 / container.clientHeight);
-composer.addPass(effectFXAA);
-
 function resize() {
   const w = container.clientWidth;
   const h = container.clientHeight;
   renderer.setSize(w, h);
-  composer.setSize(w, h);
-  outlinePass.setSize(w, h);
-  effectFXAA.uniforms['resolution'].value.set(1 / w, 1 / h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
@@ -93,7 +64,7 @@ resize();
 
 function animate() {
   requestAnimationFrame(animate);
-  composer.render();
+  renderer.render(scene, camera);
 }
 animate();
 
@@ -103,7 +74,6 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let pointerDown = null;
 let pointerMoved = false;
-let hovered = null;
 let envMesh = null;
 function applyViewPoint(){
   const vp = state.viewPoint;
@@ -167,53 +137,6 @@ function renderUI(){
   }
   stepControls.style.display = state.steps.length>1 ? 'flex' : 'none';
   renderSlots(slotsContainer, state, selectObject);
-}
-
-function arrayBufferToBase64(buffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-function buildExportScene(srcScene) {
-  const group = new THREE.Group();
-
-  srcScene.traverse((child) => {
-    if (child.isMesh && child.visible && !child.userData.noExport) {
-      const clonedMat = Array.isArray(child.material)
-        ? child.material.map((m) => {
-            const cm = m.clone();
-            cm.side = THREE.FrontSide;
-            return cm;
-          })
-        : (() => {
-            const cm = child.material.clone();
-            cm.side = THREE.FrontSide;
-            return cm;
-          })();
-
-      const clone = child.clone();
-      clone.material = clonedMat;
-      clone.geometry = child.geometry.clone();
-      child.updateWorldMatrix(true, false);
-      clone.applyMatrix4(child.matrixWorld);
-      group.add(clone);
-    }
-  });
-
-  if (!group.children.length) return new THREE.Scene();
-
-  const box = new THREE.Box3().setFromObject(group);
-  const center = box.getCenter(new THREE.Vector3());
-  group.position.sub(center);
-
-  const exportScene = new THREE.Scene();
-  exportScene.add(group);
-  return exportScene;
 }
 
 function showLoading(r) {
@@ -284,12 +207,6 @@ async function selectObject(slotIdx, objIdx, matIdx) {
   renderUI();
 }
 
-function setHovered(obj) {
-  if (hovered === obj) return;
-  hovered = obj;
-  outlinePass.selectedObjects = obj ? [obj] : [];
-}
-
 async function loadAll(){
   if(envMesh){
     scene.remove(envMesh); envMesh=null;
@@ -318,10 +235,7 @@ async function loadAll(){
       envMesh.scale.fromArray(state.environment.transform.scale);
       scene.add(envMesh);
       envMesh.updateWorldMatrix(true, true);
-      setHovered(hovered);
     }
-  } else {
-    setHovered(hovered);
   }
   for(const slot of state.slots){
     if(slot.selectedIndex>=0){
@@ -348,22 +262,9 @@ async function selectVariant(idx){
   state.slots.forEach(s=>{
     if(s.currentMesh){scene.remove(s.currentMesh); s.currentMesh=null;}
   });
-  setHovered(null);
   state.setVariant(idx);
   await loadAll();
   if(state.viewPoint.enabled) applyViewPoint(); else resetViewPoint();
-}
-
-function handleHover(event) {
-  const rect = renderer.domElement.getBoundingClientRect();
-  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(pointer, camera);
-  const objs = state.slots.map((s) => s.currentMesh).filter(Boolean);
-  const intersect = raycaster.intersectObjects(objs, true)[0];
-  let obj = intersect ? intersect.object : null;
-  while (obj && obj.userData.slotIdx === undefined) obj = obj.parent;
-  setHovered(obj);
 }
 
 function handleSceneClick(event) {
@@ -397,7 +298,6 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
 });
 
 renderer.domElement.addEventListener('pointermove', (e) => {
-  handleHover(e);
   if (!pointerDown) return;
   if (Math.abs(e.clientX - pointerDown.x) > 5 || Math.abs(e.clientY - pointerDown.y) > 5) {
     pointerMoved = true;
@@ -407,12 +307,7 @@ renderer.domElement.addEventListener('pointermove', (e) => {
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (e.button !== 0) return;
   if (!pointerMoved) handleSceneClick(e);
-  handleHover(e);
   pointerDown = null;
-});
-
-renderer.domElement.addEventListener('pointerleave', () => {
-  setHovered(null);
 });
 
 async function handleImport(file) {
@@ -447,39 +342,11 @@ nextStepBtn.addEventListener('click',()=>{
 });
 
 arBtn.addEventListener('click', async () => {
-  const exportScene = buildExportScene(scene);
-  if (!exportScene.children.length) return;
-
-  if (isAndroid()) {
-    const exporter = new GLTFExporter();
-    const arrayBuffer = await exporter.parseAsync(exportScene, { binary: true });
-    const base64 = arrayBufferToBase64(arrayBuffer);
-    const dataUrl = `data:model/gltf-binary;base64,${base64}`;
-    const intent =
-      `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(dataUrl)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
-    const win = window.open(intent, '_blank');
-    if (win) win.focus();
-  } else if (isIOS()) {
-    const exporter = new USDZExporter();
-    const arrayBuffer = await exporter.parseAsync(exportScene);
-    const blob = new Blob([arrayBuffer], { type: 'model/vnd.usdz+zip' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.rel = 'ar';
-    a.href = url;
-    a.setAttribute('download', 'scene.usdz');
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  } else {
-    alert('AR not supported');
+  let removedEnv = false;
+  if (envMesh) {
+    scene.remove(envMesh);
+    removedEnv = true;
   }
+  await viewInAR(scene);
+  if (removedEnv && envMesh) scene.add(envMesh);
 });
-
-function isAndroid() {
-  return /android/i.test(navigator.userAgent);
-}
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
-}

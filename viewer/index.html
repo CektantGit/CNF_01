@@ -13,17 +13,11 @@
       "GLTFLoader": "https://unpkg.com/three@0.165.0/examples/jsm/loaders/GLTFLoader.js",
       "RGBELoader": "https://unpkg.com/three@0.165.0/examples/jsm/loaders/RGBELoader.js",
       "GLTFExporter": "https://unpkg.com/three@0.165.0/examples/jsm/exporters/GLTFExporter.js",
-      "USDZExporter": "https://unpkg.com/three@0.165.0/examples/jsm/exporters/USDZExporter.js",
-      "BufferGeometryUtils": "https://unpkg.com/three@0.165.0/examples/jsm/utils/BufferGeometryUtils.js",
-      "EffectComposer": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/EffectComposer.js",
-      "RenderPass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/RenderPass.js",
-      "OutlinePass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/OutlinePass.js",
-      "ShaderPass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/ShaderPass.js",
-      "FXAAShader": "../js/FXAAShader.js",
-      "OutputPass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/OutputPass.js"
+      "USDZExporter": "https://unpkg.com/three@0.165.0/examples/jsm/exporters/USDZExporter.js"
     }
   }
   </script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer/dist/model-viewer.min.js"></script>
 </head>
 <body>
   <div id="viewerWrapper">
@@ -50,6 +44,7 @@
       <div class="progress"><div id="progressBar"></div></div>
     </div>
   </div>
+  <model-viewer id="ar-viewer" style="width:0;height:0;"></model-viewer>
   <script type="module" src="./js/viewer-main.js"></script>
 </body>
 </html>
