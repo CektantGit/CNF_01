@@ -65,6 +65,7 @@ const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 const outlinePass = new OutlinePass(new THREE.Vector2(1, 1), scene, camera);
 outlinePass.edgeStrength = 3;
+outlinePass.edgeThickness = 12;
 outlinePass.visibleEdgeColor.set(0x888888);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 // ensure the outline blends normally over the scene

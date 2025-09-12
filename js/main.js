@@ -124,7 +124,7 @@ const outlinePass = new OutlinePass(
   camera
 );
 outlinePass.edgeStrength = 2;
-outlinePass.edgeThickness = 1;
+outlinePass.edgeThickness = 12;
 outlinePass.visibleEdgeColor.set(0x888888);
 outlinePass.hiddenEdgeColor.set(0xffffff);
 // ensure the outline blends normally over the scene
