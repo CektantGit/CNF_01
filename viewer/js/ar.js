@@ -113,10 +113,12 @@ export async function viewInAR(scene) {
       const usdzExporter = new USDZExporter();
       const arraybuffer = await usdzExporter.parseAsync(exportScene);
       if (arraybuffer) {
-        const usdzFile = new Blob([arraybuffer], { type: 'model/vnd.usdz+zip' });
+        const usdzFile = new File([arraybuffer], 'scene.usdz', {
+          type: 'model/vnd.usdz+zip'
+        });
         const usdzUrl = URL.createObjectURL(usdzFile);
         const link = document.createElement('a');
-        link.rel = 'ar';
+        link.setAttribute('rel', 'ar');
         link.href = usdzUrl + '#allowsContentScaling=0';
         document.body.appendChild(link);
         link.click();
@@ -137,10 +139,13 @@ export async function viewInAR(scene) {
     const modelViewer = document.getElementById('ar-viewer');
     if (!modelViewer) return;
     const glbUrl = URL.createObjectURL(glbBlob);
+    const onLoad = () => {
+      modelViewer.removeEventListener('load', onLoad);
+      modelViewer.activateAR();
+      setTimeout(() => URL.revokeObjectURL(glbUrl), 10000);
+    };
+    modelViewer.addEventListener('load', onLoad, { once: true });
     modelViewer.setAttribute('src', glbUrl);
-    await modelViewer.updateComplete;
-    modelViewer.activateAR();
-    setTimeout(() => URL.revokeObjectURL(glbUrl), 10000);
     return;
   }
 
