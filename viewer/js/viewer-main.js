@@ -317,11 +317,9 @@ async function loadAll(){
       });
       envMesh.position.fromArray(state.environment.transform.position);
       const outlineScaleX = 1.01;
-      const outlineScaleZ = 0.8;
-      envMesh.position.z -= (1 - outlineScaleZ) / 2;
       envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
       envMesh.scale.fromArray(state.environment.transform.scale);
-      // build static outline slightly wider on X and thinner on Z
+      // build static outline slightly wider on X
       envOutline = new THREE.Group();
       envMesh.traverse(ch=>{
         if(ch.isMesh){
@@ -334,7 +332,6 @@ async function loadAll(){
         }
       });
       envOutline.scale.x *= outlineScaleX;
-      envOutline.scale.z *= outlineScaleZ;
       envMesh.add(envOutline);
       scene.add(envMesh);
       baseOutlines.push(envMesh);
