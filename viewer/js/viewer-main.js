@@ -233,6 +233,7 @@ async function selectObject(slotIdx, objIdx, matIdx) {
   scene.add(inst);
   if (previousMesh) scene.remove(previousMesh);
   renderUI();
+  updateShare();
   hideLoading();
 }
 
@@ -429,5 +430,9 @@ function updateShare(){
   arBtn.style.display='none';
   qrOverlay.style.display='flex';
   const url=location.origin+location.pathname+ '?cfg='+encodeConfig();
-  QRCode.toCanvas(qrCanvas,url,{width:96});
+  const ctx=qrCanvas.getContext('2d');
+  ctx.clearRect(0,0,qrCanvas.width,qrCanvas.height);
+  QRCode.toCanvas(qrCanvas,url,{width:96},err=>{
+    if(err) console.error('QR error',err);
+  });
 }
