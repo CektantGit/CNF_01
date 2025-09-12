@@ -24,7 +24,7 @@
           <p class="title">View in place</p>
           <span class="desc">Scan this QR code with your phone's camera</span>
         </div>
-        <div class="qr-code"><canvas id="qrCanvas"></canvas></div>
+        <div class="qr-code" id="qrCanvas"></div>
       </div>
     </div>
     <div id="slotPanel">
@@ -44,6 +44,7 @@
     </div>
   </div>
   <model-viewer id="ar-viewer" ar ar-modes="webxr" style="width:0;height:0;visibility:hidden"></model-viewer>
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
   <script type="module" src="./js/viewer-main.js"></script>
 </body>
 </html>

@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
-import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js';
 import { viewInAR } from './ar.js';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots, renderVariants } from './viewer-ui.js';
@@ -430,10 +429,14 @@ function updateShare(){
   }
   arBtn.style.display='none';
   qrOverlay.style.display='inline-flex';
-  const url=location.origin+location.pathname+ '?cfg='+encodeConfig();
-  const ctx=qrCanvas.getContext('2d');
-  ctx.clearRect(0,0,qrCanvas.width,qrCanvas.height);
-  QRCode.toCanvas(qrCanvas,url,{width:96},err=>{
-    if(err) console.error('QR error',err);
+  const url = location.origin + location.pathname + '?cfg=' + encodeConfig();
+  qrCanvas.innerHTML = '';
+  new QRCode(qrCanvas, {
+    text: url,
+    width: 96,
+    height: 96,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
   });
 }
