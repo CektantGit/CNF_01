@@ -139,6 +139,7 @@ button:hover {
   cursor:pointer;
   padding:11px 12px;
   font-size:14px;
+  color:var(--color-Text-Main);
   display:flex;
   align-items:center;
   justify-content:center;
