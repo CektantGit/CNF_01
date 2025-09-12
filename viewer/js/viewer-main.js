@@ -153,13 +153,14 @@ function hideLoading() {
   document.getElementById('progressBar').style.width = '0';
 }
 
-async function loadMesh(obj, overlay = false) {
+async function loadMesh(obj, overlay = false, progressCb) {
   if (obj.mesh) return obj.mesh;
   const mat = obj.materials[obj.selectedMaterial || 0];
   const url = mat?.native?.glbUrl;
   if (!url) return null;
   return await new Promise((resolve) => {
     if (overlay) showLoading(0);
+    let last = 0;
     loader.load(
       url,
       (gltf) => {
@@ -168,6 +169,11 @@ async function loadMesh(obj, overlay = false) {
         resolve(obj.mesh);
       },
       (evt) => {
+        if (progressCb && evt.total) {
+          const delta = evt.loaded - last;
+          last = evt.loaded;
+          progressCb(delta);
+        }
         if (overlay && evt.total) showLoading(evt.loaded / evt.total);
       },
       (err) => {
@@ -191,9 +197,13 @@ async function selectObject(slotIdx, objIdx, matIdx) {
     return;
   }
   const obj = slot.objects[objIdx];
-  if (typeof matIdx === 'number') obj.selectedMaterial = matIdx;
-  obj.mesh = null; // force reload for new material
-  const mesh = await loadMesh(obj, true);
+  if (typeof matIdx === 'number') {
+    if (obj.selectedMaterial !== matIdx) {
+      obj.selectedMaterial = matIdx;
+      obj.mesh = null;
+    }
+  }
+  const mesh = await loadMesh(obj, !obj.mesh);
   if (!mesh) {
     renderUI();
     return;
@@ -220,58 +230,66 @@ async function loadAll(){
   });
 
   const slotsToLoad = state.slots.filter(s=>s.selectedIndex>=0);
-  const total = (state.environment?1:0) + slotsToLoad.length;
-  let loaded = 0;
-  if(total>0) showLoading(0, true);
-
+  const tasks = [];
   if(state.environment){
     const mat=state.environment.materials[state.environment.selectedMaterial];
     const url=mat?.native?.glbUrl;
-    if(url){
-      await new Promise((resolve)=>{
-        loader.load(url,(gltf)=>{envMesh=gltf.scene;resolve();},undefined,()=>resolve());
-      });
-      if(envMesh){
-        envMesh.userData.isEnv=true;
-        envMesh.traverse(ch=>{
-          ch.userData.isEnv=true;
-          if(ch.isMesh){
-            ch.castShadow=false; ch.receiveShadow=false;
-            const m=ch.material;
-            ch.material=new THREE.MeshBasicMaterial({
-              map:m.map, aoMap:m.aoMap, aoMapIntensity:m.aoMapIntensity,
-              color:m.color?.clone(), transparent:m.transparent, opacity:m.opacity, side:m.side
-            });
-          }
-        });
-        envMesh.position.fromArray(state.environment.transform.position);
-        envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
-        envMesh.scale.fromArray(state.environment.transform.scale);
-        scene.add(envMesh);
-        envMesh.updateWorldMatrix(true, true);
-      }
-    }
-    loaded++;
-    showLoading(loaded/total);
+    if(url) tasks.push({type:'env', obj:state.environment, url});
   }
-
   for(const slot of slotsToLoad){
     const obj = slot.objects[slot.selectedIndex];
-    const mesh = await loadMesh(obj, false);
-    loaded++;
-    showLoading(loaded/total);
-    if(mesh){
-      const inst = mesh.clone();
-      inst.position.fromArray(obj.transform.position);
-      inst.rotation.set(...obj.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
-      inst.scale.fromArray(obj.transform.scale);
-      inst.userData.slotIdx = state.slots.indexOf(slot);
-      inst.userData.objIdx = slot.selectedIndex;
-      slot.currentMesh = inst;
+    const mat = obj.materials[obj.selectedMaterial || 0];
+    const url = mat?.native?.glbUrl;
+    if(url) tasks.push({type:'slot', slot, obj, url});
+  }
+
+  const urlsToFetch = tasks.filter(t=>!t.obj.mesh).map(t=>t.url);
+  const sizes = await Promise.all(urlsToFetch.map(u=>fetch(u,{method:'HEAD'}).then(r=>Number(r.headers.get('content-length'))||0).catch(()=>0)));
+  const totalBytes = sizes.reduce((a,b)=>a+b,0);
+  let loadedBytes = 0;
+  let sizeIdx = 0;
+  if(totalBytes>0) showLoading(0, true); else hideLoading();
+
+  for(const t of tasks){
+    if(!t.obj.mesh){
+      sizeIdx++;
+      await loadMesh(t.obj,false,(delta)=>{
+        loadedBytes += delta;
+        if(totalBytes>0) showLoading(loadedBytes/totalBytes);
+      });
+    }
+
+    if(t.type==='env'){
+      envMesh = t.obj.mesh.clone();
+      envMesh.userData.isEnv=true;
+      envMesh.traverse(ch=>{
+        ch.userData.isEnv=true;
+        if(ch.isMesh){
+          ch.castShadow=false; ch.receiveShadow=false;
+          const m=ch.material;
+          ch.material=new THREE.MeshBasicMaterial({
+            map:m.map, aoMap:m.aoMap, aoMapIntensity:m.aoMapIntensity,
+            color:m.color?.clone(), transparent:m.transparent, opacity:m.opacity, side:m.side
+          });
+        }
+      });
+      envMesh.position.fromArray(t.obj.transform.position);
+      envMesh.rotation.set(...t.obj.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
+      envMesh.scale.fromArray(t.obj.transform.scale);
+      scene.add(envMesh);
+      envMesh.updateWorldMatrix(true, true);
+    }else{
+      const inst = t.obj.mesh.clone();
+      inst.position.fromArray(t.obj.transform.position);
+      inst.rotation.set(...t.obj.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
+      inst.scale.fromArray(t.obj.transform.scale);
+      inst.userData.slotIdx = state.slots.indexOf(t.slot);
+      inst.userData.objIdx = t.slot.selectedIndex;
+      t.slot.currentMesh = inst;
       scene.add(inst);
     }
   }
-  hideLoading();
+  if(totalBytes>0) hideLoading();
   renderUI();
 }
 
@@ -363,6 +381,7 @@ arBtn.addEventListener('click', () => {
 });
 
 (async () => {
+  showLoading(0, true);
   try {
     const res = await fetch('default-config.json');
     const data = await res.json();
@@ -375,5 +394,6 @@ arBtn.addEventListener('click', () => {
     }
   } catch (err) {
     console.error('Default config load failed', err);
+    hideLoading();
   }
 })();
