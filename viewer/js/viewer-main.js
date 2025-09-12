@@ -324,11 +324,16 @@ async function loadAll(){
       envDepthMesh.userData.noExport = true;
       envMesh.traverse(ch=>{
         if(ch.isMesh){
-          const edges=new THREE.EdgesGeometry(ch.geometry);
-          const line=new THREE.LineSegments(edges,new THREE.LineBasicMaterial({color:0x000000}));
-          line.material.depthTest=false;
-          line.material.depthWrite=false;
-          line.renderOrder=1;
+          const edges = new THREE.EdgesGeometry(ch.geometry);
+          const line = new THREE.LineSegments(
+            edges,
+            new THREE.LineBasicMaterial({ color: 0x000000 })
+          );
+          line.material.depthTest = true;
+          line.material.depthWrite = false;
+          line.material.polygonOffset = true;
+          line.material.polygonOffsetFactor = -1;
+          line.material.polygonOffsetUnits = -1;
           ch.add(line);
         }
       });
