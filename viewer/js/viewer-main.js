@@ -104,6 +104,7 @@ let pointerDown = null;
 let pointerMoved = false;
 let hovered = null;
 let envMesh = null;
+let envDepthMesh = null;
 function applyViewPoint(){
   const vp = state.viewPoint;
   if(!vp.enabled){ resetViewPoint(); return; }
@@ -182,7 +183,7 @@ function buildExportScene(srcScene) {
   const group = new THREE.Group();
 
   srcScene.traverse((child) => {
-    if (child.isMesh && child.visible) {
+    if (child.isMesh && child.visible && !child.userData.noExport) {
       const clonedMat = Array.isArray(child.material)
         ? child.material.map((m) => {
             const cm = m.clone();
@@ -291,6 +292,7 @@ function setHovered(obj) {
 
 async function loadAll(){
   if(envMesh){scene.remove(envMesh); envMesh=null;}
+  if(envDepthMesh){scene.remove(envDepthMesh); envDepthMesh=null;}
   state.slots.forEach(s=>{
     if(s.currentMesh){ scene.remove(s.currentMesh); s.currentMesh=null; }
   });
@@ -308,6 +310,20 @@ async function loadAll(){
             map:m.map, aoMap:m.aoMap, aoMapIntensity:m.aoMapIntensity,
             color:m.color?.clone(), transparent:m.transparent, opacity:m.opacity, side:m.side
           });
+        }
+      });
+      envDepthMesh = envMesh.clone();
+      envDepthMesh.traverse(ch=>{
+        if(ch.isMesh){
+          const dm = new THREE.MeshBasicMaterial({side: ch.material.side});
+          dm.colorWrite = false;
+          ch.material = dm;
+        }
+      });
+      envDepthMesh.scale.multiplyScalar(1.001);
+      envDepthMesh.userData.noExport = true;
+      envMesh.traverse(ch=>{
+        if(ch.isMesh){
           const edges=new THREE.EdgesGeometry(ch.geometry);
           const line=new THREE.LineSegments(edges,new THREE.LineBasicMaterial({color:0x000000}));
           line.material.depthTest=false;
@@ -319,6 +335,7 @@ async function loadAll(){
       envMesh.position.fromArray(state.environment.transform.position);
       envMesh.rotation.set(...state.environment.transform.rotation.map(r=>THREE.MathUtils.degToRad(r)));
       envMesh.scale.fromArray(state.environment.transform.scale);
+      scene.add(envDepthMesh);
       scene.add(envMesh);
     }
   }

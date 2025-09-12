@@ -236,6 +236,7 @@ window.addEventListener('resize', handleResize);
 
 const meshes = {};
 let envMesh = null;
+let envDepthMesh = null;
 let envLocked = true;
 let transformMode = null;
 
@@ -327,6 +328,10 @@ function loadEnvironment(env){
     scene.remove(envMesh);
     envMesh=null;
   }
+  if(envDepthMesh){
+    scene.remove(envDepthMesh);
+    envDepthMesh=null;
+  }
   if(!env) { updateCoordInputs(); return; }
   const mat = env.materials[env.selectedMaterial];
   const url = mat?.native?.glbUrl;
@@ -347,6 +352,16 @@ function loadEnvironment(env){
         });
       }
     });
+    envDepthMesh = envMesh.clone();
+    envDepthMesh.traverse(ch=>{
+      if(ch.isMesh){
+        const dm = new THREE.MeshBasicMaterial({side: ch.material.side});
+        dm.colorWrite = false;
+        ch.material = dm;
+      }
+    });
+    envDepthMesh.scale.multiplyScalar(1.001);
+    envDepthMesh.userData.noExport = true;
     envMesh.position.fromArray(env.transform.position);
     envMesh.rotation.set(
       THREE.MathUtils.degToRad(env.transform.rotation[0]),
@@ -355,6 +370,7 @@ function loadEnvironment(env){
     );
     envMesh.scale.fromArray(env.transform.scale);
     envMesh.userData.envObj = env;
+    scene.add(envDepthMesh);
     scene.add(envMesh);
     if(transformMode!==null && state.currentSlotIndex===-1 && !envLocked) transform.attach(envMesh); else transform.detach();
     hideLoading();
@@ -365,6 +381,7 @@ function reloadScene(){
   Object.values(meshes).forEach(m=>{ if(transform.object===m) transform.detach(); scene.remove(m);});
   Object.keys(meshes).forEach(k=>delete meshes[k]);
   if(envMesh){ if(transform.object===envMesh) transform.detach(); scene.remove(envMesh); envMesh=null; }
+  if(envDepthMesh){ scene.remove(envDepthMesh); envDepthMesh=null; }
   if(state.environment) loadEnvironment(state.environment);
   state.slots.forEach((slot,idx)=>loadSlot(slot, idx===state.currentSlotIndex));
   viewPivot.position.fromArray(state.viewPoint.position);
@@ -772,6 +789,7 @@ loadEnvBtn.addEventListener('click',async()=>{
 removeEnvBtn.addEventListener('click',()=>{
   state.removeEnvironment();
   if(envMesh){ if(transform.object===envMesh) transform.detach(); scene.remove(envMesh); envMesh=null; }
+  if(envDepthMesh){ scene.remove(envDepthMesh); envDepthMesh=null; }
   envModal.style.display='none';
   updateCoordInputs();
 });
