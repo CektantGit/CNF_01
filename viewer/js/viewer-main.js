@@ -160,7 +160,6 @@ async function loadMesh(obj, overlay = false, progressCb) {
   if (!url) return null;
   return await new Promise((resolve) => {
     if (overlay) showLoading(0);
-    let last = 0;
     loader.load(
       url,
       (gltf) => {
@@ -168,10 +167,9 @@ async function loadMesh(obj, overlay = false, progressCb) {
         resolve(obj.mesh);
       },
       (evt) => {
-        if (progressCb && evt.total) {
-          const delta = evt.loaded - last;
-          last = evt.loaded;
-          progressCb(delta);
+        if (progressCb) {
+          const ratio = evt.total ? evt.loaded / evt.total : 0;
+          progressCb(ratio);
         }
         if (overlay && evt.total) showLoading(evt.loaded / evt.total);
       },
@@ -248,22 +246,19 @@ async function loadAll(){
     if(url) tasks.push({type:'slot', slot, obj, url});
   }
 
-  const urlsToFetch = tasks.filter(t=>!t.obj.mesh).map(t=>t.url);
-  const sizes = await Promise.all(urlsToFetch.map(u=>fetch(u,{method:'HEAD'}).then(r=>Number(r.headers.get('content-length'))||0).catch(()=>0)));
-  const totalBytes = sizes.reduce((a,b)=>a+b,0);
-  let loadedBytes = 0;
-  let sizeIdx = 0;
-  if(totalBytes>0) showLoading(0, true);
+  const totalTasks = tasks.length || 1;
+  let completed = 0;
+  showLoading(0, true);
 
   for(const t of tasks){
     if(!t.obj.mesh){
-      sizeIdx++;
-      await loadMesh(t.obj,false,(delta)=>{
-        loadedBytes += delta;
-        if(totalBytes>0) showLoading(loadedBytes/totalBytes);
+      await loadMesh(t.obj,false,(r)=>{
+        showLoading((completed + r)/totalTasks);
       });
     }
-
+    completed++;
+    showLoading(completed/totalTasks);
+    
     if(t.type==='env'){
       envMesh = t.obj.mesh.clone();
       envMesh.userData.isEnv=true;
@@ -294,6 +289,7 @@ async function loadAll(){
       scene.add(inst);
     }
   }
+  showLoading(1);
   renderUI();
 }
 
