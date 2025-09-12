@@ -76,14 +76,13 @@ button:hover {
 }
 
 /* slot list */
-#slotPanel details {
+.slot-section{
   margin-bottom:8px;
 }
-#slotPanel summary {
-  cursor:pointer;
-  padding:4px 8px;
-  background:var(--color-Gray-20);
-  border-radius:4px;
+.slot-name{
+  font-size:28px;
+  font-weight:600;
+  margin-bottom:8px;
 }
 .object-list {
   display:grid;

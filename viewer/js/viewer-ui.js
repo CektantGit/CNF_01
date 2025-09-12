@@ -35,22 +35,22 @@ export function renderSlots(container, state, onSelect){
   container.innerHTML='';
   const stepId = state.currentStep?.id;
   state.slots.filter(s=>String(s.stepId)===String(stepId)).forEach((slot)=>{
-    const sIdx = state.slots.indexOf(slot);
-    const det=document.createElement('details');
-    det.open = slot.open;
-    det.addEventListener('toggle',()=>{slot.open = det.open;});
-    const sum=document.createElement('summary');
-    sum.textContent=slot.name;
-    det.appendChild(sum);
-    const list=document.createElement('div');
-    list.className='object-list ' + (slot.textButtons ? 'text-mode' : 'thumb-mode');
+    const slotIndex = state.slots.indexOf(slot);
+    const wrap = document.createElement('div');
+    wrap.className='slot-section';
+    const title = document.createElement('div');
+    title.className='slot-name';
+    title.textContent = slot.name;
+    wrap.appendChild(title);
+    const list = document.createElement('div');
+    list.className = 'object-list ' + (slot.textButtons ? 'text-mode' : 'thumb-mode');
     if(slot.canBeEmpty){
       if(slot.textButtons){
         const btn=document.createElement('button');
         btn.className='variant-btn text-option';
         btn.textContent='None';
         if(slot.selectedIndex===-1) btn.classList.add('selected');
-        btn.addEventListener('click',()=>onSelect(sIdx,-1,0));
+        btn.addEventListener('click',()=>onSelect(slotIndex,-1,0));
         list.appendChild(btn);
         fitButtonText(btn);
       }else{
@@ -65,7 +65,7 @@ export function renderSlots(container, state, onSelect){
         label.className='label';
         label.textContent='None';
         none.appendChild(label);
-        none.addEventListener('click',()=>onSelect(sIdx,-1,0));
+        none.addEventListener('click',()=>onSelect(slotIndex,-1,0));
         list.appendChild(none);
       }
     }
@@ -82,7 +82,6 @@ export function renderSlots(container, state, onSelect){
           btn.className='variant-btn text-option';
           if(slot.selectedIndex===oIdx && obj.selectedMaterial===mIdx) btn.classList.add('selected');
           btn.textContent = obj.colorNames?.[mIdx] || mat.name;
-          const slotIndex = state.slots.indexOf(slot);
           btn.addEventListener('click',()=>onSelect(slotIndex,oIdx,mIdx));
           list.appendChild(btn);
           fitButtonText(btn);
@@ -99,13 +98,12 @@ export function renderSlots(container, state, onSelect){
           label.className='label';
           label.textContent=mat.name;
           item.appendChild(label);
-          const slotIndex = state.slots.indexOf(slot);
           item.addEventListener('click',()=>onSelect(slotIndex,oIdx,mIdx));
           list.appendChild(item);
         }
       });
     });
-    det.appendChild(list);
-    container.appendChild(det);
+    wrap.appendChild(list);
+    container.appendChild(wrap);
   });
 }
