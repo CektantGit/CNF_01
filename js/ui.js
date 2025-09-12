@@ -92,6 +92,12 @@ export function renderObjects(slot, container, { onSelectObject, onSelectMateria
       });
       if (objIndex === slot.selectedObjectIndex && matIndex === obj.selectedMaterial) {
         btn.classList.add('selected');
+        const check=document.createElement('span');
+        check.className='check';
+        const chkImg=document.createElement('img');
+        chkImg.src='https://cdn.jsdelivr.net/npm/lucide-static@0.452.0/icons/check.svg';
+        check.appendChild(chkImg);
+        btn.appendChild(check);
       }
       matList.appendChild(btn);
     });

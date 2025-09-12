@@ -6,6 +6,7 @@
   --color-Borders-Main: #dbdbdb;
   --color-Text-Main: #3f485a;
   --color-White: #fff;
+  --color-check: #22C55E;
 }
 
 body,html{margin:0;padding:0;height:100%;overflow:hidden;font-family:Inter,sans-serif;color:var(--color-Text-Main);}
@@ -76,9 +77,10 @@ canvas{display:block;}
 .obj-card{border:1px solid var(--color-Borders-Main);padding:5px;margin-bottom:5px;border-radius:4px;}
 .obj-card.selected{background:var(--color-Gray-20);}
 .material-list{display:flex;flex-wrap:wrap;}
-.material-list button{border:none;background:none;padding:0;margin:2px;cursor:pointer;}
-.material-list button.selected{outline:2px solid var(--color-Brand-Main);}
+.material-list button{border:none;background:none;padding:0;margin:2px;cursor:pointer;position:relative;}
 .material-list img{width:40px;height:40px;object-fit:cover;border-radius:2px;}
+.material-list button .check{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:999px;background:var(--color-check);display:flex;align-items:center;justify-content:center;}
+.material-list button .check img{width:14px;height:14px;filter:invert(1) brightness(2);}
 button{background:var(--color-Gray-10);border:1px solid var(--color-Borders-Main);border-radius:4px;padding:4px 8px;color:var(--color-Text-Main);transition:background .2s,color .2s;}
 button:hover{background:var(--color-Brand-Main);color:var(--color-White);}
 button.active{background:var(--color-Brand-Main);color:var(--color-White);}

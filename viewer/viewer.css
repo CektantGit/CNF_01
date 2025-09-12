@@ -143,9 +143,6 @@ button {
 .object-item:hover .thumb{
   box-shadow:0 0 0 2px rgba(0,0,0,0.04) inset;
 }
-.object-item.selected .thumb{
-  border-color:var(--color-black);
-}
 .object-item .check {
   position:absolute;
   top:6px;
