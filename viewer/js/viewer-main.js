@@ -119,20 +119,24 @@ function applyViewPoint(){
   const sph = new THREE.Spherical().setFromVector3(offset);
   const basePolar = sph.phi;
   const baseAzimuth = sph.theta;
-  if(vp.vertical>0){
-    const r = THREE.MathUtils.degToRad(vp.vertical)/2;
-    controls.minPolarAngle = Math.max(0, basePolar - r);
-    controls.maxPolarAngle = Math.min(Math.PI, basePolar + r);
+  if(vp.up>0) {
+    controls.minPolarAngle = Math.max(0, basePolar - THREE.MathUtils.degToRad(vp.up));
   } else {
     controls.minPolarAngle = 0;
+  }
+  if(vp.down>0) {
+    controls.maxPolarAngle = Math.min(Math.PI, basePolar + THREE.MathUtils.degToRad(vp.down));
+  } else {
     controls.maxPolarAngle = Math.PI;
   }
-  if(vp.horizontal>0){
-    const r = THREE.MathUtils.degToRad(vp.horizontal)/2;
-    controls.minAzimuthAngle = baseAzimuth - r;
-    controls.maxAzimuthAngle = baseAzimuth + r;
+  if(vp.left>0) {
+    controls.minAzimuthAngle = baseAzimuth - THREE.MathUtils.degToRad(vp.left);
   } else {
     controls.minAzimuthAngle = -Infinity;
+  }
+  if(vp.right>0) {
+    controls.maxAzimuthAngle = baseAzimuth + THREE.MathUtils.degToRad(vp.right);
+  } else {
     controls.maxAzimuthAngle = Infinity;
   }
   controls.maxDistance = vp.maxDistance>0?vp.maxDistance:Infinity;

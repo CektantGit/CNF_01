@@ -67,8 +67,10 @@ const varList = document.getElementById('varList');
 const saveVarBtn = document.getElementById('saveVar');
 const closeVarBtn = document.getElementById('closeVar');
 const viewModal = document.getElementById('viewModal');
-const viewVert = document.getElementById('viewVert');
-const viewHoriz = document.getElementById('viewHoriz');
+const viewLeft = document.getElementById('viewLeft');
+const viewRight = document.getElementById('viewRight');
+const viewDown = document.getElementById('viewDown');
+const viewUp = document.getElementById('viewUp');
 const viewDist = document.getElementById('viewDist');
 const viewMove = document.getElementById('viewMove');
 const viewEnabled = document.getElementById('viewEnabled');
@@ -174,20 +176,24 @@ function applyViewPreview(){
   const sph = new THREE.Spherical().setFromVector3(offset);
   const basePolar = sph.phi;
   const baseAzimuth = sph.theta;
-  if(vp.vertical>0){
-    const r = THREE.MathUtils.degToRad(vp.vertical)/2;
-    orbit.minPolarAngle = Math.max(0, basePolar - r);
-    orbit.maxPolarAngle = Math.min(Math.PI, basePolar + r);
-  }else{
+  if(vp.up>0) {
+    orbit.minPolarAngle = Math.max(0, basePolar - THREE.MathUtils.degToRad(vp.up));
+  } else {
     orbit.minPolarAngle = 0;
+  }
+  if(vp.down>0) {
+    orbit.maxPolarAngle = Math.min(Math.PI, basePolar + THREE.MathUtils.degToRad(vp.down));
+  } else {
     orbit.maxPolarAngle = Math.PI;
   }
-  if(vp.horizontal>0){
-    const r = THREE.MathUtils.degToRad(vp.horizontal)/2;
-    orbit.minAzimuthAngle = baseAzimuth - r;
-    orbit.maxAzimuthAngle = baseAzimuth + r;
-  }else{
+  if(vp.left>0) {
+    orbit.minAzimuthAngle = baseAzimuth - THREE.MathUtils.degToRad(vp.left);
+  } else {
     orbit.minAzimuthAngle = -Infinity;
+  }
+  if(vp.right>0) {
+    orbit.maxAzimuthAngle = baseAzimuth + THREE.MathUtils.degToRad(vp.right);
+  } else {
     orbit.maxAzimuthAngle = Infinity;
   }
   orbit.maxDistance = vp.maxDistance>0 ? vp.maxDistance : Infinity;
@@ -687,16 +693,20 @@ stepsBtn.addEventListener('click', () => {
 
 viewBtn.addEventListener('click', () => {
   viewEnabled.checked = state.viewPoint.enabled;
-  viewVert.value = state.viewPoint.vertical;
-  viewHoriz.value = state.viewPoint.horizontal;
+  viewLeft.value = state.viewPoint.left;
+  viewRight.value = state.viewPoint.right;
+  viewDown.value = state.viewPoint.down;
+  viewUp.value = state.viewPoint.up;
   viewDist.value = state.viewPoint.maxDistance;
   viewMove.checked = state.viewPoint.allowMovement;
   viewModal.style.display='block';
 });
 saveViewBtn.addEventListener('click', ()=>{
   state.viewPoint.enabled = viewEnabled.checked;
-  state.viewPoint.vertical = parseFloat(viewVert.value)||0;
-  state.viewPoint.horizontal = parseFloat(viewHoriz.value)||0;
+  state.viewPoint.left = parseFloat(viewLeft.value)||0;
+  state.viewPoint.right = parseFloat(viewRight.value)||0;
+  state.viewPoint.down = parseFloat(viewDown.value)||0;
+  state.viewPoint.up = parseFloat(viewUp.value)||0;
   state.viewPoint.maxDistance = parseFloat(viewDist.value)||0;
   state.viewPoint.allowMovement = viewMove.checked;
   viewModal.style.display='none';
