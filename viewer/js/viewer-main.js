@@ -139,18 +139,26 @@ function renderUI(){
   renderSlots(slotsContainer, state, selectObject);
 }
 
-function showLoading(r, initial = false, message = 'Loading') {
+function showLoading(r, initial = false, message = 'Loading', showBar = true) {
   const overlay = document.getElementById('loadingOverlay');
   const bar = document.getElementById('progressBar');
+  const progressWrap = overlay.querySelector('.progress');
   overlay.querySelector('p').textContent = message;
   if (initial) overlay.classList.add('white');
   overlay.style.display = 'flex';
-  bar.style.width = Math.floor(r * 100) + '%';
+  if (showBar) {
+    progressWrap.style.display = 'block';
+    bar.style.width = Math.floor(r * 100) + '%';
+  } else {
+    progressWrap.style.display = 'none';
+  }
 }
 function hideLoading() {
   const overlay = document.getElementById('loadingOverlay');
   overlay.style.display = 'none';
   overlay.classList.remove('white');
+  const progressWrap = overlay.querySelector('.progress');
+  progressWrap.style.display = 'block';
   document.getElementById('progressBar').style.width = '0';
 }
 
@@ -381,8 +389,8 @@ nextStepBtn.addEventListener('click',()=>{
 });
 
 arBtn.addEventListener('click', async () => {
-  showLoading(0, false, 'Prepare AR scene');
-  await viewInAR(scene, (r) => showLoading(r, false, 'Prepare AR scene'));
+  showLoading(0, false, 'Prepare AR scene', false);
+  await viewInAR(scene);
   hideLoading();
 });
 

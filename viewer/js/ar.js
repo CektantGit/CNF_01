@@ -33,10 +33,9 @@ function fixTexture(tex) {
 }
 
 // Export the current scene and launch model-viewer's AR mode.
-export async function viewInAR(scene, progressCb) {
+export async function viewInAR(scene) {
   const exportScene = new THREE.Group();
   scene.updateMatrixWorld(true);
-  progressCb && progressCb(0);
 
   // Clone all meshes with world transforms and strip extra attributes.
   scene.traverse(obj => {
@@ -107,7 +106,6 @@ export async function viewInAR(scene, progressCb) {
 
   const exporter = new GLTFExporter();
   const glbBuffer = await exporter.parseAsync(exportScene, { binary: true });
-  progressCb && progressCb(0.5);
   const glbBlob = new Blob([glbBuffer], { type: 'model/gltf-binary' });
 
   // iOS Quick Look via anchor
@@ -116,15 +114,12 @@ export async function viewInAR(scene, progressCb) {
     try {
       const usdzExporter = new USDZExporter();
       const arraybuffer = await usdzExporter.parseAsync(exportScene);
-      progressCb && progressCb(0.9);
       if (arraybuffer) {
-        const usdzFile = new File([arraybuffer], 'scene.usdz', {
-          type: 'model/vnd.usdz+zip'
-        });
+        const usdzFile = new Blob([arraybuffer], { type: 'model/vnd.usdz+zip' });
         const usdzUrl = URL.createObjectURL(usdzFile);
         const link = document.createElement('a');
         link.rel = 'ar';
-        link.href = usdzUrl;
+        link.href = usdzUrl + '#allowsContentScaling=0';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -133,28 +128,27 @@ export async function viewInAR(scene, progressCb) {
     } catch (err) {
       console.error('USDZ export failed', err);
     }
-    progressCb && progressCb(1);
     return;
   }
 
-  const modelViewer = document.getElementById('ar-viewer');
-  if (!modelViewer) {
-    console.error('AR viewer element not found');
-    return;
-  }
+  const base64 = await blobToBase64(glbBlob);
+  const dataUrl = `data:model/gltf-binary;base64,${base64}`;
+  const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(dataUrl)}&mode=ar_only&resizable=false#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;`;
+  const anchor = document.createElement('a');
+  anchor.href = intent;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+}
 
-  const glbUrl = URL.createObjectURL(glbBlob);
-  modelViewer.setAttribute('src', glbUrl);
-  await modelViewer.updateComplete;
-  try {
-    await modelViewer.activateAR();
-  } catch (err) {
-    const link = document.createElement('a');
-    link.href = glbUrl;
-    link.download = 'scene.glb';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-  progressCb && progressCb(1);
+function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const data = reader.result;
+      const base64 = data.substring(data.indexOf(',') + 1);
+      resolve(base64);
+    };
+    reader.readAsDataURL(blob);
+  });
 }
