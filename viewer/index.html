@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Viewer</title>
+  <link rel="stylesheet" href="viewer.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+      "OrbitControls": "https://unpkg.com/three@0.165.0/examples/jsm/controls/OrbitControls.js",
+      "GLTFLoader": "https://unpkg.com/three@0.165.0/examples/jsm/loaders/GLTFLoader.js",
+      "RGBELoader": "https://unpkg.com/three@0.165.0/examples/jsm/loaders/RGBELoader.js",
+      "GLTFExporter": "https://unpkg.com/three@0.165.0/examples/jsm/exporters/GLTFExporter.js",
+      "USDZExporter": "https://unpkg.com/three@0.165.0/examples/jsm/exporters/USDZExporter.js",
+      "BufferGeometryUtils": "https://unpkg.com/three@0.165.0/examples/jsm/utils/BufferGeometryUtils.js",
+      "EffectComposer": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/EffectComposer.js",
+      "RenderPass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/RenderPass.js",
+      "OutlinePass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/OutlinePass.js",
+      "ShaderPass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/ShaderPass.js",
+      "FXAAShader": "https://unpkg.com/three@0.165.0/examples/jsm/shaders/FXAAShader.js",
+      "OutputPass": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/OutputPass.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="viewerWrapper">
+    <div id="viewerCanvas">
+      <div id="bottomButtons">
+        <button id="arBtn">AR</button>
+        <button id="importBtn">Import JSON</button>
+        <input type="file" id="importInput" accept="application/json" style="display:none" />
+      </div>
+    </div>
+    <div id="slotPanel">
+      <div id="variantBar"></div>
+      <div id="stepControls">
+        <button id="prevStep">Prev</button>
+        <span id="stepName"></span>
+        <button id="nextStep">Next</button>
+      </div>
+      <div id="slotsContainer"></div>
+    </div>
+  </div>
+  <div id="loadingOverlay">
+    <div class="loading-box">
+      <p>Loading</p>
+      <div class="progress"><div id="progressBar"></div></div>
+    </div>
+  </div>
+  <script type="module" src="./js/viewer-main.js"></script>
+</body>
+</html>
