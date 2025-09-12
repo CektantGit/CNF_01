@@ -673,8 +673,8 @@ exportBtn.addEventListener('click', () => {
   URL.revokeObjectURL(a.href);
 });
 
-importBtn.addEventListener('click', () => importInput.click());
-importInput.addEventListener('change', async e => {
+importBtn.addEventListener('click', () => importInput && importInput.click());
+importInput && importInput.addEventListener('change', async e => {
   const file = e.target.files[0];
   if (!file) return;
   try {
@@ -684,7 +684,7 @@ importInput.addEventListener('change', async e => {
   } catch (err) {
     console.error('Import failed', err);
   }
-  importInput.value = '';
+  if (importInput) importInput.value = '';
 });
 
 stepsBtn.addEventListener('click', () => {
@@ -692,6 +692,7 @@ stepsBtn.addEventListener('click', () => {
 });
 
 viewBtn.addEventListener('click', () => {
+  if (!viewEnabled || !viewLeft || !viewRight || !viewDown || !viewUp || !viewDist || !viewMove) return;
   viewEnabled.checked = state.viewPoint.enabled;
   viewLeft.value = state.viewPoint.left;
   viewRight.value = state.viewPoint.right;
@@ -699,18 +700,19 @@ viewBtn.addEventListener('click', () => {
   viewUp.value = state.viewPoint.up;
   viewDist.value = state.viewPoint.maxDistance;
   viewMove.checked = state.viewPoint.allowMovement;
-  viewModal.style.display='block';
+  viewModal.style.display = 'block';
 });
-saveViewBtn.addEventListener('click', ()=>{
+saveViewBtn.addEventListener('click', () => {
+  if (!viewEnabled || !viewLeft || !viewRight || !viewDown || !viewUp || !viewDist || !viewMove) return;
   state.viewPoint.enabled = viewEnabled.checked;
-  state.viewPoint.left = parseFloat(viewLeft.value)||0;
-  state.viewPoint.right = parseFloat(viewRight.value)||0;
-  state.viewPoint.down = parseFloat(viewDown.value)||0;
-  state.viewPoint.up = parseFloat(viewUp.value)||0;
-  state.viewPoint.maxDistance = parseFloat(viewDist.value)||0;
+  state.viewPoint.left = parseFloat(viewLeft.value) || 0;
+  state.viewPoint.right = parseFloat(viewRight.value) || 0;
+  state.viewPoint.down = parseFloat(viewDown.value) || 0;
+  state.viewPoint.up = parseFloat(viewUp.value) || 0;
+  state.viewPoint.maxDistance = parseFloat(viewDist.value) || 0;
   state.viewPoint.allowMovement = viewMove.checked;
-  viewModal.style.display='none';
-  if(viewPreview) applyViewPreview();
+  viewModal.style.display = 'none';
+  if (viewPreview) applyViewPreview();
 });
 closeViewBtn.addEventListener('click', ()=>{viewModal.style.display='none';});
 
