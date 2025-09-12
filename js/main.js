@@ -891,7 +891,7 @@ function renderUI(){
   stepNameEl.textContent = step.name;
   stepControls.style.display = state.steps.length>1 ? 'flex' : 'none';
   renderVariants();
-  if(state.currentSlot?.stepId !== step.id){
+  if(state.currentSlotIndex !== -1 && state.currentSlot?.stepId !== step.id){
     const idx = state.slots.findIndex(s=>s.stepId===step.id);
     state.currentSlotIndex = idx;
   }
