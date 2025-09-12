@@ -236,7 +236,7 @@ function handleResize(){
 window.addEventListener('resize', handleResize);
 
 const meshes = {};
-let envMesh = null;
+let envMesh = null, envOutline = null;
 let envLocked = true;
 let transformMode = null;
 
@@ -325,6 +325,10 @@ function hideLoading(){
 function loadEnvironment(env){
   if(envMesh){
     if(transform.object===envMesh) transform.detach();
+    if(envOutline){
+      envMesh.remove(envOutline);
+      envOutline=null;
+    }
     scene.remove(envMesh);
     envMesh=null;
   }
@@ -357,6 +361,21 @@ function loadEnvironment(env){
     );
     envMesh.scale.fromArray(env.transform.scale);
     envMesh.userData.envObj = env;
+    // build static outline slightly wider on X and thinner on Z
+    envOutline = new THREE.Group();
+    envMesh.traverse(ch=>{
+      if(ch.isMesh){
+        const edge = new THREE.EdgesGeometry(ch.geometry);
+        const line = new THREE.LineSegments(edge, new THREE.LineBasicMaterial({color:0x000000}));
+        line.position.copy(ch.position);
+        line.rotation.copy(ch.rotation);
+        line.scale.copy(ch.scale);
+        envOutline.add(line);
+      }
+    });
+    envOutline.scale.x *= 1.02;
+    envOutline.scale.z *= 0.9;
+    envMesh.add(envOutline);
     scene.add(envMesh);
     baseOutlines.push(envMesh);
     setHovered(hovered);
@@ -368,7 +387,11 @@ function loadEnvironment(env){
 function reloadScene(){
   Object.values(meshes).forEach(m=>{ if(transform.object===m) transform.detach(); scene.remove(m);});
   Object.keys(meshes).forEach(k=>delete meshes[k]);
-  if(envMesh){ if(transform.object===envMesh) transform.detach(); scene.remove(envMesh); envMesh=null; }
+  if(envMesh){
+    if(transform.object===envMesh) transform.detach();
+    if(envOutline){ envMesh.remove(envOutline); envOutline=null; }
+    scene.remove(envMesh); envMesh=null;
+  }
   baseOutlines.length = 0;
   if(state.environment) loadEnvironment(state.environment);
   state.slots.forEach((slot,idx)=>loadSlot(slot, idx===state.currentSlotIndex));
@@ -776,7 +799,11 @@ loadEnvBtn.addEventListener('click',async()=>{
 });
 removeEnvBtn.addEventListener('click',()=>{
   state.removeEnvironment();
-  if(envMesh){ if(transform.object===envMesh) transform.detach(); scene.remove(envMesh); envMesh=null; }
+  if(envMesh){
+    if(transform.object===envMesh) transform.detach();
+    if(envOutline){ envMesh.remove(envOutline); envOutline=null; }
+    scene.remove(envMesh); envMesh=null;
+  }
   baseOutlines.length = 0;
   setHovered(hovered);
   envModal.style.display='none';
