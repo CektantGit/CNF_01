@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Viewer</title>
+  <link rel="stylesheet" href="viewer.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+      "three/examples/jsm/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer/dist/model-viewer.min.js"></script>
+</head>
+<body>
+  <div id="viewerWrapper">
+    <div id="viewerCanvas">
+      <button id="arBtn">View in place</button>
+      <div id="qrOverlay">
+        <div class="qr-text">
+          <p class="title">View in place</p>
+          <span class="desc">Scan this QR code with<br/>your phone's camera</span>
+        </div>
+        <div class="qr-code" id="qrCanvas"></div>
+      </div>
+    </div>
+    <div id="slotPanel">
+      <div id="variantBar"></div>
+      <div id="stepControls">
+        <button id="prevStep">Prev</button>
+        <span id="stepName"></span>
+        <button id="nextStep">Next</button>
+      </div>
+      <div id="slotsContainer"></div>
+    </div>
+  </div>
+  <div id="loadingOverlay" class="white">
+    <div class="loading-box">
+      <p>Loading</p>
+      <div class="progress"><div id="progressBar"></div></div>
+    </div>
+  </div>
+  <model-viewer id="ar-viewer" ar ar-modes="webxr" style="width:0;height:0;visibility:hidden"></model-viewer>
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <script type="module" src="./js/viewer-main.js"></script>
+</body>
+</html>
