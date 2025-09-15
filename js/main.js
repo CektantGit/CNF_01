@@ -95,7 +95,6 @@ new RGBELoader().load(
   (hdr) => {
     const envMap = pmrem.fromEquirectangular(hdr).texture;
     scene.environment = envMap;
-    scene.background = envMap;
     hdr.dispose();
     pmrem.dispose();
   }
