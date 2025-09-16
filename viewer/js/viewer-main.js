@@ -113,7 +113,7 @@ function applyViewPoint(){
     controls.maxAzimuthAngle = Infinity;
   }
   controls.maxDistance = vp.maxDistance>0?vp.maxDistance:Infinity;
-  controls.enablePan = vp.allowMovement;
+  controls.enablePan = false;
   controls.update();
 }
 

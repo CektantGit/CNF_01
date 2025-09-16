@@ -6,7 +6,7 @@ export class ViewerState {
     this.steps = [];
     this.environment = null;
     this.currentStepIndex = 0;
-    this.viewPoint = { position:[0,0,0], rotation:[0,0,0], left:0, right:0, down:0, up:0, maxDistance:0, allowMovement:false };
+    this.viewPoint = { position:[0,0,0], rotation:[0,0,0], left:0, right:0, down:0, up:0, maxDistance:0 };
   }
 
   async _buildVariant(src, fetchDetails, fallbackName) {
@@ -71,7 +71,6 @@ export class ViewerState {
       down: src.viewPoint?.down || 0,
       up: src.viewPoint?.up || 0,
       maxDistance: src.viewPoint?.maxDistance || 0,
-      allowMovement: !!src.viewPoint?.allowMovement,
       enabled: !!src.viewPoint?.enabled
     };
     return { id: src.id || crypto.randomUUID(), name: src.name || fallbackName, steps, slots, viewPoint };

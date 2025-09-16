@@ -27,13 +27,12 @@ export class ConfiguratorState {
         left: 0,
         right: 0,
         down: 0,
-        up: 0,
-        maxDistance: 0,
-        allowMovement: false,
-        enabled: false,
-        hidden: false
-      }
-    };
+      up: 0,
+      maxDistance: 0,
+      enabled: false,
+      hidden: false
+    }
+  };
   }
 
   _cloneVariant(src, name) {
@@ -72,7 +71,6 @@ export class ConfiguratorState {
       down: src.viewPoint.down,
       up: src.viewPoint.up,
       maxDistance: src.viewPoint.maxDistance,
-      allowMovement: src.viewPoint.allowMovement,
       enabled: src.viewPoint.enabled || false,
       hidden: src.viewPoint.hidden || false
     };
@@ -205,13 +203,12 @@ export class ConfiguratorState {
           rotation:vdata.viewPoint?.rotation||[0,0,0],
           left:vdata.viewPoint?.left||0,
           right:vdata.viewPoint?.right||0,
-          down:vdata.viewPoint?.down||0,
-          up:vdata.viewPoint?.up||0,
-          maxDistance:vdata.viewPoint?.maxDistance||0,
-          allowMovement:!!vdata.viewPoint?.allowMovement,
-          enabled:!!vdata.viewPoint?.enabled,
-          hidden:!!vdata.viewPoint?.hidden
-        };
+        down:vdata.viewPoint?.down||0,
+        up:vdata.viewPoint?.up||0,
+        maxDistance:vdata.viewPoint?.maxDistance||0,
+        enabled:!!vdata.viewPoint?.enabled,
+        hidden:!!vdata.viewPoint?.hidden
+      };
         variant.steps = Object.entries(vdata.steps||{}).map(([id,s])=>({id,name:s.name,index:s.index||0}));
         if(!variant.steps.length) variant.steps=[{id:crypto.randomUUID(),name:'Step 1',index:0}];
         variant.steps.sort((a,b)=>a.index-b.index);
@@ -235,7 +232,6 @@ export class ConfiguratorState {
         down:data.viewPoint?.down||0,
         up:data.viewPoint?.up||0,
         maxDistance:data.viewPoint?.maxDistance||0,
-        allowMovement:!!data.viewPoint?.allowMovement,
         enabled:!!data.viewPoint?.enabled,
         hidden:!!data.viewPoint?.hidden
       };
@@ -281,7 +277,6 @@ export class ConfiguratorState {
         down:variant.viewPoint.down,
         up:variant.viewPoint.up,
         maxDistance:variant.viewPoint.maxDistance,
-        allowMovement:variant.viewPoint.allowMovement,
         enabled:variant.viewPoint.enabled,
         hidden:variant.viewPoint.hidden
       }};

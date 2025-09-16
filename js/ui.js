@@ -1,4 +1,4 @@
-export function renderSlots(state, container, { onSelect, onDelete, onToggleHide }, stepId) {
+export function renderSlots(state, container, { onSelect, onDelete, onToggleHide, onOpenViewSettings }, stepId) {
   container.innerHTML = '';
   const vp = document.createElement('li');
   vp.className = 'slot' + (state.currentSlotIndex === -1 ? ' selected' : '');
@@ -10,7 +10,7 @@ export function renderSlots(state, container, { onSelect, onDelete, onToggleHide
   settingsBtn.className = 'action-btn';
   settingsBtn.addEventListener('click', e => {
     e.stopPropagation();
-    document.getElementById('viewBtn')?.click();
+    onOpenViewSettings?.();
   });
   const hideBtn = document.createElement('button');
   hideBtn.textContent = 'Hide';
@@ -120,7 +120,7 @@ export function renderSlotsMobile(state, container, slotCallbacks, objectCallbac
   const settings=document.createElement('button');
   settings.textContent='Setting view';
   settings.className='action-btn';
-  settings.addEventListener('click',e=>{e.stopPropagation();document.getElementById('viewBtn')?.click();});
+  settings.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onOpenViewSettings?.();});
   const hide=document.createElement('button');
   hide.textContent='Hide';
   hide.className='hide-btn'+(state.viewPoint.hidden?' active':'');

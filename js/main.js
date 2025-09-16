@@ -11,13 +11,13 @@ import { FXAAShader } from 'FXAAShader';
 import { OutputPass } from 'OutputPass';
 import { ConfiguratorState } from './state.js';
 import { renderSlots, renderObjects, renderSlotsMobile } from './ui.js';
-import { openObjectModal, openStepsModal } from './modal.js';
+import { openObjectModal } from './modal.js';
 import { fetchObjectDetails } from './api.js';
 
 const state = new ConfiguratorState();
 
 const slotListEl = document.getElementById('slots');
-const variantSelect = document.getElementById('variantSelect');
+const variantListEl = document.getElementById('variantList');
 const addVariantBtn = document.getElementById('addVariant');
 const delVariantBtn = document.getElementById('delVariant');
 const renVariantBtn = document.getElementById('renVariant');
@@ -27,21 +27,21 @@ const nextStepBtn = document.getElementById('nextStep');
 const stepNameEl = document.getElementById('stepName');
 const delStepBtn = document.getElementById('delStep');
 const stepControls = document.getElementById('stepControls');
+const stepsListEl = document.getElementById('stepsList');
+const addStepBtn = document.getElementById('addStep');
 const addObjectBtn = document.getElementById('addObjectBtn');
 const inheritBtn = document.getElementById('inheritBtn');
 const objectsContainer = document.getElementById('objects');
 const objectActionsRow = document.getElementById('objectActions');
 const slotOptionsRow = document.getElementById('slotOptions');
+const slotDetailSection = document.getElementById('slotDetail');
 const canBeEmptyChk = document.getElementById('canBeEmpty');
 const textButtonsChk = document.getElementById('textButtons');
 const slotSettingsBtn = document.getElementById('slotSettings');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
-const stepsBtn = document.getElementById('stepsBtn');
-const viewBtn = document.getElementById('viewBtn');
 const viewToggleBtn = document.getElementById('viewToggle');
-const stepsModal = document.getElementById('stepsModal');
 const modalEl = document.getElementById('objectModal');
 const moveBtn = document.getElementById('moveBtn');
 const rotateBtn = document.getElementById('rotateBtn');
@@ -55,28 +55,46 @@ const coordY = document.getElementById('coordY');
 const coordZ = document.getElementById('coordZ');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const progressBar = document.getElementById('progressBar');
-const envBtn = document.getElementById('envBtn');
 const lockBtn = document.getElementById('lockBtn');
-const envModal = document.getElementById('envModal');
 const envUuidInput = document.getElementById('envUuid');
 const loadEnvBtn = document.getElementById('loadEnv');
 const removeEnvBtn = document.getElementById('removeEnv');
-const closeEnvBtn = document.getElementById('closeEnv');
+const envInfoEl = document.getElementById('envInfo');
 const varModal = document.getElementById('varModal');
 const varList = document.getElementById('varList');
 const saveVarBtn = document.getElementById('saveVar');
 const closeVarBtn = document.getElementById('closeVar');
-const viewModal = document.getElementById('viewModal');
+const viewEnabled = document.getElementById('viewEnabled');
 const viewLeft = document.getElementById('viewLeft');
 const viewRight = document.getElementById('viewRight');
 const viewDown = document.getElementById('viewDown');
 const viewUp = document.getElementById('viewUp');
 const viewDist = document.getElementById('viewDist');
-const viewMove = document.getElementById('viewMove');
-const viewEnabled = document.getElementById('viewEnabled');
-const saveViewBtn = document.getElementById('saveView');
-const closeViewBtn = document.getElementById('closeView');
+const tabButtons = Array.from(document.querySelectorAll('#tabButtons .tab-button'));
+const panels = {
+  slot: document.getElementById('panel-slot'),
+  env: document.getElementById('panel-env'),
+  cam: document.getElementById('panel-cam'),
+  world: document.getElementById('panel-world')
+};
+
 outlineBtn.classList.add('active');
+
+let activeTab = 'slot';
+function setActiveTab(tab) {
+  if (!panels[tab]) return;
+  activeTab = tab;
+  tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+  Object.entries(panels).forEach(([key, panel]) => {
+    panel.classList.toggle('active', key === tab);
+  });
+}
+tabButtons.forEach(btn => {
+  btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
+});
+setActiveTab('slot');
+
+let variantEditIndex = null;
 
 // THREE.js setup
 const viewer = document.getElementById('viewer');
@@ -196,7 +214,7 @@ function applyViewPreview(){
     orbit.maxAzimuthAngle = Infinity;
   }
   orbit.maxDistance = vp.maxDistance>0 ? vp.maxDistance : Infinity;
-  orbit.enablePan = vp.allowMovement;
+  orbit.enablePan = false;
   orbit.update();
 }
 
@@ -241,15 +259,14 @@ let transformMode = null;
 const axisNames = ['x','y','z'];
 
 function updatePanels(){
-  if(state.currentSlotIndex===-1){
-    objectActionsRow.style.display='none';
-    slotOptionsRow.style.display='none';
-    viewBtn.style.display='inline-block';
-    objectsContainer.innerHTML='';
-  }else{
-    objectActionsRow.style.display='flex';
-    slotOptionsRow.style.display='flex';
-    viewBtn.style.display='none';
+  const hasSlot = state.currentSlotIndex !== -1 && !!state.currentSlot;
+  objectActionsRow.style.display = hasSlot ? 'flex' : 'none';
+  slotOptionsRow.style.display = hasSlot ? 'flex' : 'none';
+  if (slotDetailSection) {
+    slotDetailSection.style.display = hasSlot && !isMobile() ? 'flex' : 'none';
+  }
+  if (!hasSlot) {
+    objectsContainer.innerHTML = '';
   }
 }
 
@@ -381,13 +398,136 @@ function reloadScene(){
 }
 
 function renderVariants(){
-  variantSelect.innerHTML='';
-  state.variants.forEach((v,i)=>{
-    const opt=document.createElement('option');
-    opt.value=i; opt.textContent=v.name;
-    variantSelect.appendChild(opt);
+  if(!variantListEl) return;
+  variantListEl.innerHTML='';
+  if(variantEditIndex!=null && variantEditIndex>=state.variants.length){
+    variantEditIndex = null;
+  }
+  state.variants.forEach((variant,index)=>{
+    const row=document.createElement('div');
+    row.className='variant-row'+(index===state.currentVariantIndex?' selected':'');
+    if(variantEditIndex===index){
+      const input=document.createElement('input');
+      input.type='text';
+      input.value=variant.name;
+      const commit=()=>{
+        const value=input.value.trim();
+        if(!value){
+          input.value=variant.name;
+          input.focus();
+          input.select();
+          return;
+        }
+        variant.name=value;
+        variantEditIndex=null;
+        renderVariants();
+      };
+      input.addEventListener('blur',commit);
+      input.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){ commit(); }
+        if(e.key==='Escape'){ variantEditIndex=null; renderVariants(); }
+      });
+      row.appendChild(input);
+      setTimeout(()=>{ input.focus(); input.select(); },0);
+    }else{
+      const name=document.createElement('span');
+      name.textContent=variant.name;
+      row.appendChild(name);
+    }
+    row.addEventListener('click',()=>{
+      if(variantEditIndex===index) return;
+      if(state.currentVariantIndex===index) return;
+      state.currentVariantIndex=index;
+      state.currentSlotIndex=-1;
+      state.currentStepIndex=0;
+      renderUI();
+      reloadScene();
+    });
+    variantListEl.appendChild(row);
   });
-  variantSelect.value=state.currentVariantIndex;
+  delVariantBtn.disabled = state.variants.length <= 1;
+}
+
+function renderStepsEditor(){
+  if(!stepsListEl) return;
+  stepsListEl.innerHTML='';
+  state.steps.forEach((step, stepIndex)=>{
+    const row=document.createElement('div');
+    row.className='step-row';
+    const header=document.createElement('div');
+    header.className='step-header';
+    const nameInput=document.createElement('input');
+    nameInput.type='text';
+    nameInput.value=step.name;
+    nameInput.addEventListener('change',()=>{
+      const value=nameInput.value.trim();
+      if(!value){
+        nameInput.value = step.name;
+        return;
+      }
+      step.name = value;
+      if(stepIndex===state.currentStepIndex){
+        stepNameEl.textContent = step.name;
+      }
+    });
+    header.appendChild(nameInput);
+    const delBtn=document.createElement('button');
+    delBtn.textContent='Delete';
+    delBtn.className='action-btn';
+    delBtn.disabled = state.steps.length <= 1;
+    delBtn.addEventListener('click',()=>{
+      if(state.steps.length<=1) return;
+      const removed = state.steps.splice(stepIndex,1)[0];
+      state.slots.forEach(s=>{ if(s.stepId===removed.id) s.stepId = state.steps[0].id; });
+      if(state.currentStepIndex>=state.steps.length) state.currentStepIndex=0;
+      renderUI();
+    });
+    header.appendChild(delBtn);
+    row.appendChild(header);
+    const checks=document.createElement('div');
+    checks.className='slot-checks';
+    state.slots.forEach(slot=>{
+      const label=document.createElement('label');
+      const chk=document.createElement('input');
+      chk.type='checkbox';
+      chk.checked = slot.stepId === step.id;
+      chk.addEventListener('change',()=>{
+        if(chk.checked){
+          slot.stepId = step.id;
+        }else if(slot.stepId === step.id){
+          slot.stepId = state.steps[0]?.id || step.id;
+        }
+        renderUI();
+      });
+      label.appendChild(chk);
+      label.appendChild(document.createTextNode(slot.name));
+      checks.appendChild(label);
+    });
+    row.appendChild(checks);
+    stepsListEl.appendChild(row);
+  });
+}
+
+function syncCameraPanel(){
+  if(!viewEnabled) return;
+  viewEnabled.checked = !!state.viewPoint.enabled;
+  if(viewLeft) viewLeft.value = state.viewPoint.left ?? 0;
+  if(viewRight) viewRight.value = state.viewPoint.right ?? 0;
+  if(viewDown) viewDown.value = state.viewPoint.down ?? 0;
+  if(viewUp) viewUp.value = state.viewPoint.up ?? 0;
+  if(viewDist) viewDist.value = state.viewPoint.maxDistance ?? 0;
+}
+
+function syncEnvironmentPanel(){
+  if(envUuidInput) envUuidInput.value = state.environment?.uuid || '';
+  if(envInfoEl){
+    if(state.environment){
+      envInfoEl.textContent = state.environment.name || state.environment.uuid || '';
+    }else{
+      envInfoEl.textContent = 'No environment loaded';
+    }
+  }
+  lockBtn.classList.toggle('active', envLocked);
 }
 
 function animate() {
@@ -587,6 +727,10 @@ function selectSlot(index){
 
 const slotCallbacks = {
   onSelect: selectSlot,
+  onOpenViewSettings(){
+    setActiveTab('cam');
+    syncCameraPanel();
+  },
   onDelete(id) {
     const mesh = meshes[id];
     if (mesh) {
@@ -690,35 +834,6 @@ importInput && importInput.addEventListener('change', async e => {
   if (importInput) importInput.value = '';
 });
 
-stepsBtn.addEventListener('click', () => {
-  openStepsModal(stepsModal, state, renderUI);
-});
-
-viewBtn.addEventListener('click', () => {
-  if (!viewEnabled || !viewLeft || !viewRight || !viewDown || !viewUp || !viewDist || !viewMove) return;
-  viewEnabled.checked = state.viewPoint.enabled;
-  viewLeft.value = state.viewPoint.left;
-  viewRight.value = state.viewPoint.right;
-  viewDown.value = state.viewPoint.down;
-  viewUp.value = state.viewPoint.up;
-  viewDist.value = state.viewPoint.maxDistance;
-  viewMove.checked = state.viewPoint.allowMovement;
-  viewModal.style.display = 'block';
-});
-saveViewBtn.addEventListener('click', () => {
-  if (!viewEnabled || !viewLeft || !viewRight || !viewDown || !viewUp || !viewDist || !viewMove) return;
-  state.viewPoint.enabled = viewEnabled.checked;
-  state.viewPoint.left = parseFloat(viewLeft.value) || 0;
-  state.viewPoint.right = parseFloat(viewRight.value) || 0;
-  state.viewPoint.down = parseFloat(viewDown.value) || 0;
-  state.viewPoint.up = parseFloat(viewUp.value) || 0;
-  state.viewPoint.maxDistance = parseFloat(viewDist.value) || 0;
-  state.viewPoint.allowMovement = viewMove.checked;
-  viewModal.style.display = 'none';
-  if (viewPreview) applyViewPreview();
-});
-closeViewBtn.addEventListener('click', ()=>{viewModal.style.display='none';});
-
 viewToggleBtn.addEventListener('click',()=>{
   viewPreview = !viewPreview;
   viewToggleBtn.classList.toggle('active', viewPreview);
@@ -746,42 +861,72 @@ delStepBtn.addEventListener('click',()=>{
   renderUI();
 });
 
-variantSelect.addEventListener('change',()=>{
-  state.currentVariantIndex=parseInt(variantSelect.value); state.currentSlotIndex=-1; state.currentStepIndex=0;
+addVariantBtn.addEventListener('click',()=>{
+  state.addVariant();
+  variantEditIndex = state.currentVariantIndex;
   renderUI();
   reloadScene();
 });
-addVariantBtn.addEventListener('click',()=>{state.addVariant(); renderVariants(); renderUI(); reloadScene();});
-delVariantBtn.addEventListener('click',()=>{state.deleteCurrentVariant(); renderVariants(); renderUI(); reloadScene();});
-renVariantBtn.addEventListener('click',()=>{const name=prompt('Variant name',state.currentVariant.name); if(name){state.renameCurrentVariant(name); renderVariants();}});
+delVariantBtn.addEventListener('click',()=>{
+  state.deleteCurrentVariant();
+  variantEditIndex = null;
+  renderUI();
+  reloadScene();
+});
+renVariantBtn.addEventListener('click',()=>{
+  if(state.variants.length===0) return;
+  variantEditIndex = state.currentVariantIndex;
+  renderVariants();
+});
 
-envBtn.addEventListener('click',()=>{envModal.style.display='block';});
 lockBtn.addEventListener('click',()=>{
   envLocked = !envLocked;
-  lockBtn.classList.toggle('active', envLocked);
   if(envLocked && transform.object===envMesh) transform.detach();
   if(!envLocked && envMesh && state.currentSlotIndex===-1 && transformMode!==null) transform.attach(envMesh);
   updateCoordInputs();
+  syncEnvironmentPanel();
 });
-closeEnvBtn.addEventListener('click',()=>{envModal.style.display='none';});
 loadEnvBtn.addEventListener('click',async()=>{
   const uuid=envUuidInput.value.trim(); if(!uuid) return;
   const details=await fetchObjectDetails(uuid); if(!details) return;
   const env={uuid,name:details.name,materials:details.materials||[],selectedMaterial:0,transform:{position:[0,0,0],rotation:[0,0,0],scale:[1,1,1]}};
   state.setEnvironment(env);
-  envModal.style.display='none';
   loadEnvironment(env);
+  syncEnvironmentPanel();
 });
-  removeEnvBtn.addEventListener('click',()=>{
-    state.removeEnvironment();
-    if(envMesh){
-      if(transform.object===envMesh) transform.detach();
-      scene.remove(envMesh); envMesh=null;
-    }
-    setHovered(hovered && hovered.userData?.envObj ? null : hovered);
-    envModal.style.display='none';
-    updateCoordInputs();
+removeEnvBtn.addEventListener('click',()=>{
+  state.removeEnvironment();
+  if(envMesh){
+    if(transform.object===envMesh) transform.detach();
+    scene.remove(envMesh); envMesh=null;
+  }
+  setHovered(hovered && hovered.userData?.envObj ? null : hovered);
+  updateCoordInputs();
+  syncEnvironmentPanel();
+});
+
+addStepBtn?.addEventListener('click',()=>{
+  state.addStep(`Step ${state.steps.length + 1}`);
+  renderUI();
+});
+
+viewEnabled?.addEventListener('change',()=>{
+  state.viewPoint.enabled = viewEnabled.checked;
+  if(viewPreview) applyViewPreview();
+});
+[
+  { el: viewLeft, prop: 'left' },
+  { el: viewRight, prop: 'right' },
+  { el: viewDown, prop: 'down' },
+  { el: viewUp, prop: 'up' },
+  { el: viewDist, prop: 'maxDistance' }
+].forEach(({el, prop})=>{
+  el?.addEventListener('change',()=>{
+    const val = parseFloat(el.value);
+    state.viewPoint[prop] = isNaN(val) ? 0 : val;
+    if(viewPreview) applyViewPreview();
   });
+});
 
 function updateTransformButtons() {
   moveBtn.classList.toggle('active', transformMode === 'translate');
@@ -913,7 +1058,7 @@ async function handleImport(data) {
   reloadScene();
   setTransformMode(null);
   await state.importJSON(data, fetchObjectDetails);
-  renderVariants();
+  variantEditIndex = null;
   renderUI();
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
   textButtonsChk.checked = state.currentSlot?.textButtons || false;
@@ -926,24 +1071,28 @@ state.addSlot();
 function renderUI(){
   if(state.currentStepIndex>=state.steps.length) state.currentStepIndex = 0;
   const step = state.currentStep;
+  state.steps.forEach((s,i)=>{ s.index = i; });
   stepNameEl.textContent = step.name;
   stepControls.style.display = state.steps.length>1 ? 'flex' : 'none';
   renderVariants();
+  renderStepsEditor();
   if(state.currentSlotIndex !== -1 && state.currentSlot?.stepId !== step.id){
     const idx = state.slots.findIndex(s=>s.stepId===step.id);
     state.currentSlotIndex = idx;
   }
   if(isMobile()){
-    objectsContainer.parentElement.style.display='none';
+    if(slotDetailSection) slotDetailSection.style.display='none';
     renderSlotsMobile(state, slotListEl, slotCallbacks, objectCallbacks, step.id);
   }else{
-    objectsContainer.parentElement.style.display='block';
+    if(slotDetailSection) slotDetailSection.style.display='flex';
     renderSlots(state, slotListEl, slotCallbacks, step.id);
     renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
   }
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
   textButtonsChk.checked = state.currentSlot?.textButtons || false;
   updatePanels();
+  syncCameraPanel();
+  syncEnvironmentPanel();
 }
 
 renderUI();
