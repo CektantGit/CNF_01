@@ -26,6 +26,16 @@
 </head>
 <body>
   <div id="container">
+    <div id="slotsPanel">
+      <div id="stepControls">
+        <button id="prevStep">Prev</button>
+        <span id="stepName"></span>
+        <button id="nextStep">Next</button>
+        <button id="delStep" class="action-btn">Delete step</button>
+      </div>
+      <button id="addSlotBtn" class="action-btn">Add slot</button>
+      <ul id="slots"></ul>
+    </div>
     <div id="viewerSection">
       <div id="viewer">
         <div id="transformBtns">
@@ -57,16 +67,6 @@
     </div>
     <div id="sidePanel">
       <div class="panel active" id="panel-slot">
-        <div class="panel-section">
-          <div id="stepControls">
-            <button id="prevStep">Prev</button>
-            <span id="stepName"></span>
-            <button id="nextStep">Next</button>
-            <button id="delStep" class="action-btn">Delete step</button>
-          </div>
-          <button id="addSlotBtn" class="action-btn">Add slot</button>
-          <ul id="slots"></ul>
-        </div>
         <div class="panel-section" id="slotDetail">
           <div id="objectActions">
             <button id="addObjectBtn" class="action-btn">Add object</button>

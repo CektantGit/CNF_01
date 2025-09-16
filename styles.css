@@ -11,6 +11,7 @@
 
 body,html{margin:0;padding:0;height:100%;overflow:hidden;font-family:Inter,sans-serif;color:var(--color-Text-Main);background:var(--color-Gray-10);}
 #container{display:flex;height:100%;}
+#slotsPanel{width:280px;display:flex;flex-direction:column;gap:12px;padding:16px;box-sizing:border-box;background:var(--color-Gray-10);border-right:1px solid var(--color-Borders-Main);}
 #viewerSection{flex:1;display:flex;position:relative;background:#0f1015;}
 #viewer{flex:1;position:relative;background:#0f1015;}
 #viewer canvas{display:block;width:100%;height:100%;}
@@ -33,8 +34,8 @@ body,html{margin:0;padding:0;height:100%;overflow:hidden;font-family:Inter,sans-
 .panel-section{display:flex;flex-direction:column;gap:12px;}
 #panel-slot{display:flex;flex-direction:column;gap:16px;}
 #panel-slot .panel-section:first-child{flex:1;display:flex;flex-direction:column;gap:12px;}
-#panel-slot .panel-section:first-child #slots{flex:1;}
-#slotDetail{display:flex;flex-direction:column;gap:10px;}
+#slotDetail{display:flex;flex-direction:column;gap:10px;flex:1;}
+#objects{display:flex;flex-direction:column;gap:12px;}
 #stepControls{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;}
 #addSlotBtn{display:block;width:100%;}
 #slots{list-style:none;padding:0;margin:0;flex:1;overflow-y:auto;background:var(--color-White);border:1px solid var(--color-Borders-Main);border-radius:8px;padding:6px;}
@@ -116,10 +117,11 @@ button.active{background:var(--color-Brand-Main);color:var(--color-White);}
 
 @media (max-width:768px){
   #container{flex-direction:column;}
-  #viewerSection{height:60vh;}
+  #viewerSection{order:1;flex-direction:column;height:60vh;}
+  #slotsPanel{order:2;width:100%;height:40vh;border-right:none;border-top:1px solid var(--color-Borders-Main);padding:12px;}
   #tabButtons{flex-direction:row;width:100%;height:48px;border-left:none;border-top:1px solid var(--color-Borders-Main);padding:6px 8px;}
   #tabButtons .tab-button{flex:1;height:100%;}
-  #sidePanel{width:100%;height:40vh;}
+  #sidePanel{order:3;width:100%;height:40vh;}
   .panel{padding:12px;}
   #slots{padding:10px;}
   .slot-mobile summary{display:flex;justify-content:space-between;align-items:center;padding:6px;cursor:pointer;}
