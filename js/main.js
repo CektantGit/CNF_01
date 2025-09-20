@@ -34,6 +34,8 @@ const objectsContainer = document.getElementById('objects');
 const objectActionsRow = document.getElementById('objectActions');
 const slotOptionsRow = document.getElementById('slotOptions');
 const slotDetailSection = document.getElementById('slotDetail');
+const buttonTextSection = document.getElementById('buttonTextSection');
+const buttonTextBody = document.getElementById('buttonTextBody');
 const canBeEmptyChk = document.getElementById('canBeEmpty');
 const textButtonsChk = document.getElementById('textButtons');
 const exportBtn = document.getElementById('exportBtn');
@@ -281,6 +283,10 @@ function updatePanels(){
   slotOptionsRow.style.display = hasSlot ? 'flex' : 'none';
   if (slotDetailSection) {
     slotDetailSection.style.display = hasSlot && !isMobile() ? 'flex' : 'none';
+  }
+  if(buttonTextSection){
+    const showButtonText = hasSlot && !!state.currentSlot?.textButtons;
+    buttonTextSection.style.display = showButtonText ? 'block' : 'none';
   }
   if (!hasSlot) {
     objectsContainer.innerHTML = '';
@@ -579,6 +585,78 @@ function renderStepsEditor(){
     });
     row.appendChild(checks);
     stepsListEl.appendChild(row);
+  });
+}
+
+function ensureColorNames(obj){
+  if(!obj) return;
+  if(!Array.isArray(obj.colorNames)) obj.colorNames = [];
+  obj.colorNames.length = obj.materials.length;
+  obj.materials.forEach((mat, idx)=>{
+    if(!obj.colorNames[idx]){
+      obj.colorNames[idx] = mat?.name || '';
+    }
+  });
+}
+
+function renderButtonTextEditor(){
+  if(!buttonTextSection || !buttonTextBody) return;
+  const slot = state.currentSlotIndex === -1 ? null : state.currentSlot;
+  const shouldShow = !!slot && slot.textButtons;
+  buttonTextSection.style.display = shouldShow ? 'block' : 'none';
+  if(!shouldShow){
+    buttonTextBody.innerHTML = '';
+    return;
+  }
+  buttonTextBody.innerHTML = '';
+  if(!slot.objects.length){
+    const empty=document.createElement('p');
+    empty.className='button-text-empty';
+    empty.textContent='Add objects to edit button labels.';
+    buttonTextBody.appendChild(empty);
+    return;
+  }
+  slot.objects.forEach((obj,objIndex)=>{
+    ensureColorNames(obj);
+    const group=document.createElement('div');
+    group.className='button-text-group';
+    const heading=document.createElement('div');
+    heading.className='button-text-heading';
+    heading.textContent=obj.name || `Object ${objIndex + 1}`;
+    group.appendChild(heading);
+    const list=document.createElement('div');
+    list.className='button-text-list';
+    if(!obj.materials.length){
+      const emptyMat=document.createElement('p');
+      emptyMat.className='button-text-empty';
+      emptyMat.textContent='No materials available for this object.';
+      list.appendChild(emptyMat);
+    }else{
+      obj.materials.forEach((mat,matIndex)=>{
+        const row=document.createElement('div');
+        row.className='button-text-row';
+        const label=document.createElement('span');
+        label.textContent=mat?.name || `Option ${matIndex + 1}`;
+        row.appendChild(label);
+        const input=document.createElement('input');
+        input.type='text';
+        input.value=obj.colorNames?.[matIndex] || mat?.name || '';
+        input.placeholder=mat?.name || '';
+        input.addEventListener('change',()=>{
+          const value=input.value.trim();
+          if(!value){
+            input.value=obj.colorNames?.[matIndex] || mat?.name || '';
+            return;
+          }
+          ensureColorNames(obj);
+          obj.colorNames[matIndex] = value;
+        });
+        row.appendChild(input);
+        list.appendChild(row);
+      });
+    }
+    group.appendChild(list);
+    buttonTextBody.appendChild(group);
   });
 }
 
@@ -1126,6 +1204,8 @@ canBeEmptyChk.addEventListener('change', () => {
 textButtonsChk.addEventListener('change', () => {
   const slot = state.currentSlot;
   if (slot) slot.textButtons = textButtonsChk.checked;
+  renderButtonTextEditor();
+  updatePanels();
 });
 
 async function handleImport(data) {
@@ -1164,6 +1244,7 @@ function renderUI(){
   }
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
   textButtonsChk.checked = state.currentSlot?.textButtons || false;
+  renderButtonTextEditor();
   updatePanels();
   syncCameraPanel();
   syncEnvironmentPanel();

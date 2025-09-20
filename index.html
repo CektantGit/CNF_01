@@ -106,10 +106,26 @@
             <button id="inheritBtn" class="action-btn">Inherit first</button>
           </div>
           <div id="slotOptions">
-            <label><input type="checkbox" id="canBeEmpty"> Can be empty</label>
-            <label><input type="checkbox" id="textButtons"> Button text</label>
+            <div class="toggle-row">
+              <span>Can be empty</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="canBeEmpty">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <span>Button text</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="textButtons">
+                <span class="slider"></span>
+              </label>
+            </div>
           </div>
           <div id="objects"></div>
+          <details id="buttonTextSection" class="button-text-section">
+            <summary>Button labels</summary>
+            <div class="details-body" id="buttonTextBody"></div>
+          </details>
         </div>
       </div>
       <div class="panel" id="panel-env">

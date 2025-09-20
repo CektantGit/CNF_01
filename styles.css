@@ -23,8 +23,7 @@ body,html{margin:0;padding:0;height:100%;overflow:hidden;font-family:Inter,sans-
 #coordsPanel input::-webkit-outer-spin-button,#coordsPanel input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 #coordsPanel input[type=number]{-moz-appearance:textfield;}
 #objectActions{display:flex;gap:5px;margin-bottom:10px;}
-#slotOptions{display:flex;align-items:center;gap:5px;margin-bottom:10px;flex-wrap:wrap;}
-#slotOptions label{display:flex;align-items:center;gap:4px;}
+#slotOptions{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:10px;}
 #tabButtons{position:absolute;top:50%;right:12px;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px;padding:0;background:transparent;border:none;pointer-events:none;z-index:3;}
 .tab-button{width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,0.28);background:rgba(15,16,21,0.78);color:#f2f4f8;font-weight:600;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s,color .2s,opacity .2s;pointer-events:auto;}
 .tab-button.active{background:var(--color-Brand-Main);border-color:var(--color-Brand-Main);color:var(--color-White);}
@@ -69,6 +68,15 @@ details{border:1px solid var(--color-Borders-Main);border-radius:10px;background
 details:last-child{margin-bottom:0;}
 summary{padding:10px 14px;font-weight:600;cursor:pointer;}
 .details-body{padding:12px;display:flex;flex-direction:column;gap:12px;}
+.button-text-section{display:none;}
+.button-text-group{display:flex;flex-direction:column;gap:8px;}
+.button-text-heading{font-weight:600;color:var(--color-Gray-70);}
+.button-text-list{display:flex;flex-direction:column;gap:8px;}
+.button-text-row{display:flex;align-items:center;gap:12px;}
+.button-text-row span{flex:1;font-weight:600;color:var(--color-Gray-70);}
+.button-text-row input{flex:1;min-width:0;font:inherit;padding:8px 10px;border:1px solid var(--color-Borders-Main);border-radius:8px;background:var(--color-White);}
+.button-text-row input:focus{outline:2px solid rgba(67,86,242,0.35);}
+.button-text-empty{font-size:13px;color:var(--color-Gray-70);}
 #stepsList{display:flex;flex-direction:column;gap:10px;}
 .step-row{display:flex;flex-direction:column;gap:4px;border:1px solid var(--color-Borders-Main);padding:8px;border-radius:6px;background:var(--color-White);}
 .step-row .slot-checks{display:flex;flex-wrap:wrap;gap:6px;}
