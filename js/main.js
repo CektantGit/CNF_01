@@ -616,14 +616,10 @@ function renderButtonTextEditor(){
     buttonTextBody.appendChild(empty);
     return;
   }
-  slot.objects.forEach((obj,objIndex)=>{
+  slot.objects.forEach((obj)=>{
     ensureColorNames(obj);
     const group=document.createElement('div');
     group.className='button-text-group';
-    const heading=document.createElement('div');
-    heading.className='button-text-heading';
-    heading.textContent=obj.name || `Object ${objIndex + 1}`;
-    group.appendChild(heading);
     const list=document.createElement('div');
     list.className='button-text-list';
     if(!obj.materials.length){
@@ -635,9 +631,21 @@ function renderButtonTextEditor(){
       obj.materials.forEach((mat,matIndex)=>{
         const row=document.createElement('div');
         row.className='button-text-row';
-        const label=document.createElement('span');
-        label.textContent=mat?.name || `Option ${matIndex + 1}`;
-        row.appendChild(label);
+        const preview=document.createElement('div');
+        preview.className='button-text-preview';
+        const url=mat?.previews?.[0]?.subRes?.small || mat?.previews?.[0]?.url;
+        if(url){
+          const img=document.createElement('img');
+          img.src=url;
+          img.alt=mat?.name || '';
+          preview.appendChild(img);
+        }else{
+          preview.classList.add('empty');
+          if(mat?.name){
+            preview.textContent=mat.name[0].toUpperCase();
+          }
+        }
+        row.appendChild(preview);
         const input=document.createElement('input');
         input.type='text';
         input.value=obj.colorNames?.[matIndex] || mat?.name || '';
