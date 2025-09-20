@@ -248,10 +248,11 @@ async function loadAll(){
     if(s.currentMesh){ scene.remove(s.currentMesh); s.currentMesh=null; }
   });
 
-  const slotsToLoad = state.slots.filter(s=>s.selectedIndex>=0);
+  const slotsToLoad = state.slots.filter(s=>s.selectedIndex>=0 && s.objects[s.selectedIndex]);
   const tasks = [];
   if(state.environment){
-    const mat=state.environment.materials[state.environment.selectedMaterial];
+    const mats = state.environment.materials || [];
+    const mat = mats[state.environment.selectedMaterial || 0];
     const url=mat?.native?.glbUrl;
     if(url) tasks.push({type:'env', obj:state.environment, url});
   }

@@ -61,6 +61,11 @@ export class ViewerState {
           mesh: null
         });
       }
+      if (!slot.objects.length) {
+        slot.selectedIndex = -1;
+      } else if (slot.selectedIndex >= slot.objects.length) {
+        slot.selectedIndex = 0;
+      }
       slots.push(slot);
     }
     const viewPoint = {
@@ -120,6 +125,13 @@ export class ViewerState {
       currentMesh: null,
       objects: s.objects.map(o => ({ ...o, mesh: null }))
     }));
+    this.slots.forEach(slot => {
+      if (!slot.objects.length) {
+        slot.selectedIndex = -1;
+      } else if (slot.selectedIndex >= slot.objects.length) {
+        slot.selectedIndex = 0;
+      }
+    });
     this.currentStepIndex = 0;
     this.viewPoint = { ...v.viewPoint };
   }
