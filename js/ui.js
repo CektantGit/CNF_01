@@ -59,6 +59,41 @@ export function renderSlots(state, container, { onSelect, onDelete, onToggleHide
 export function renderObjects(slot, container, { onSelectObject, onSelectMaterial, onDelete }) {
   container.innerHTML = '';
   if (!slot) return;
+  if(slot.canBeEmpty){
+    if(!slot.emptyLabel) slot.emptyLabel = 'empty';
+    const emptyCard = document.createElement('div');
+    emptyCard.className = 'obj-card empty-option' + (slot.selectedObjectIndex === -1 ? ' selected' : '');
+    const title = document.createElement('div');
+    title.textContent = slot.emptyLabel || 'empty';
+    title.addEventListener('click', () => onSelectObject(-1));
+    const matList = document.createElement('div');
+    matList.className = 'material-list';
+    const btn = document.createElement('button');
+    btn.type='button';
+    btn.className='empty-option-btn';
+    btn.setAttribute('aria-pressed', slot.selectedObjectIndex === -1);
+    const img = document.createElement('img');
+    img.src = 'https://cdn.jsdelivr.net/npm/lucide-static@0.452.0/icons/x.svg';
+    img.alt = slot.emptyLabel || 'empty';
+    btn.appendChild(img);
+    if (slot.selectedObjectIndex === -1) {
+      btn.classList.add('selected');
+      const check=document.createElement('span');
+      check.className='check';
+      const chkImg=document.createElement('img');
+      chkImg.src='https://cdn.jsdelivr.net/npm/lucide-static@0.452.0/icons/check.svg';
+      check.appendChild(chkImg);
+      btn.appendChild(check);
+    }
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      onSelectObject(-1);
+    });
+    matList.appendChild(btn);
+    emptyCard.appendChild(title);
+    emptyCard.appendChild(matList);
+    container.appendChild(emptyCard);
+  }
   slot.objects.forEach((obj, objIndex) => {
     const card = document.createElement('div');
     card.className = 'obj-card' + (objIndex === slot.selectedObjectIndex ? ' selected' : '');
@@ -147,6 +182,33 @@ export function renderSlotsMobile(state, container, slotCallbacks, objectCallbac
     actions.appendChild(hide);actions.appendChild(del);sum.appendChild(actions);
     det.appendChild(sum);
     const body=document.createElement('div');
+    if(slot.canBeEmpty){
+      if(!slot.emptyLabel) slot.emptyLabel='empty';
+      const emptyCard=document.createElement('div');
+      emptyCard.className='obj-card empty-option'+(slot.selectedObjectIndex===-1?' selected':'');
+      const title=document.createElement('div');
+      title.textContent=slot.emptyLabel||'empty';
+      const handleSelectEmpty=()=>{state.currentSlotIndex=index;objectCallbacks.onSelectObject(-1);renderSlotsMobile(state,container,slotCallbacks,objectCallbacks,stepId);};
+      title.addEventListener('click',handleSelectEmpty);
+      const matList=document.createElement('div');
+      matList.className='material-list';
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='empty-option-btn';
+      btn.setAttribute('aria-pressed',slot.selectedObjectIndex===-1);
+      const img=document.createElement('img');
+      img.src='https://cdn.jsdelivr.net/npm/lucide-static@0.452.0/icons/x.svg';
+      img.alt=slot.emptyLabel||'empty';
+      btn.appendChild(img);
+      if(slot.selectedObjectIndex===-1){
+        btn.classList.add('selected');
+      }
+      btn.addEventListener('click',e=>{e.stopPropagation();handleSelectEmpty();});
+      matList.appendChild(btn);
+      emptyCard.appendChild(title);
+      emptyCard.appendChild(matList);
+      body.appendChild(emptyCard);
+    }
     slot.objects.forEach((obj,objIndex)=>{
       const card=document.createElement('div');
       card.className='obj-card'+(objIndex===slot.selectedObjectIndex?' selected':'');

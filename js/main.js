@@ -609,6 +609,39 @@ function renderButtonTextEditor(){
     return;
   }
   buttonTextBody.innerHTML = '';
+  if(slot && slot.canBeEmpty){
+    if(!slot.emptyLabel) slot.emptyLabel = 'empty';
+    const emptyRow=document.createElement('div');
+    emptyRow.className='button-text-row';
+    const preview=document.createElement('div');
+    preview.className='button-text-preview empty-option';
+    const img=document.createElement('img');
+    img.src='https://cdn.jsdelivr.net/npm/lucide-static@0.452.0/icons/x.svg';
+    img.alt=slot.emptyLabel;
+    preview.appendChild(img);
+    emptyRow.appendChild(preview);
+    const input=document.createElement('input');
+    input.type='text';
+    input.value=slot.emptyLabel || 'empty';
+    input.placeholder='empty';
+    input.addEventListener('change',()=>{
+      const value=input.value.trim();
+      if(!value){
+        input.value=slot.emptyLabel || 'empty';
+        return;
+      }
+      slot.emptyLabel = value;
+      img.alt = value;
+      if(isMobile()){
+        const stepId = state.currentStep?.id || state.steps[0]?.id;
+        renderSlotsMobile(state, slotListEl, slotCallbacks, objectCallbacks, stepId);
+      }else{
+        renderObjects(slot, objectsContainer, objectCallbacks);
+      }
+    });
+    emptyRow.appendChild(input);
+    buttonTextBody.appendChild(emptyRow);
+  }
   if(!slot.objects.length){
     const empty=document.createElement('p');
     empty.className='button-text-empty';
@@ -925,26 +958,47 @@ const slotCallbacks = {
 const objectCallbacks = {
   onSelectObject(index) {
     const slot = state.currentSlot;
+    if(!slot) return;
     slot.selectedObjectIndex = index;
     renderUI();
-    loadSlot(slot, true);
+    const current = state.currentSlot;
+    if(current){
+      loadSlot(current, true);
+      activateSlot(current);
+    } else {
+      activateSlot(null);
+    }
   },
   onSelectMaterial(objIndex, matIndex) {
     const slot = state.currentSlot;
+    if(!slot) return;
     slot.selectedObjectIndex = objIndex;
     const obj = slot.objects[objIndex];
     obj.selectedMaterial = matIndex;
     renderUI();
-    loadSlot(slot, true);
+    const current = state.currentSlot;
+    if(current){
+      loadSlot(current, true);
+      activateSlot(current);
+    } else {
+      activateSlot(null);
+    }
   },
   onDelete(objIndex) {
     const slot = state.currentSlot;
+    if(!slot) return;
     slot.objects.splice(objIndex, 1);
     if (slot.selectedObjectIndex >= slot.objects.length) {
-      slot.selectedObjectIndex = slot.objects.length - 1;
+      slot.selectedObjectIndex = slot.canBeEmpty ? -1 : slot.objects.length - 1;
     }
     renderUI();
-    loadSlot(slot, true);
+    const current = state.currentSlot;
+    if(current){
+      loadSlot(current, true);
+      activateSlot(current);
+    } else {
+      activateSlot(null);
+    }
   }
 };
 
@@ -1206,7 +1260,21 @@ inheritBtn.addEventListener('click', () => {
 
 canBeEmptyChk.addEventListener('change', () => {
   const slot = state.currentSlot;
-  if (slot) slot.canBeEmpty = canBeEmptyChk.checked;
+  if (!slot) return;
+  slot.canBeEmpty = canBeEmptyChk.checked;
+  if(slot.canBeEmpty){
+    if(!slot.emptyLabel) slot.emptyLabel = 'empty';
+  }else if(slot.selectedObjectIndex === -1 && slot.objects.length){
+    slot.selectedObjectIndex = 0;
+  }
+  renderUI();
+  const current = state.currentSlot;
+  if(current){
+    loadSlot(current, true);
+    activateSlot(current);
+  } else {
+    activateSlot(null);
+  }
 });
 
 textButtonsChk.addEventListener('change', () => {

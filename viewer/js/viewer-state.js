@@ -38,6 +38,7 @@ export class ViewerState {
         name: slotData.name,
         canBeEmpty: slotData.canBeEmpty,
         textButtons: slotData.textButtons || false,
+        emptyLabel: slotData.emptyLabel || slotData.emptyName || 'empty',
         objects: [],
         selectedIndex: slotData.canBeEmpty ? -1 : 0,
         open: false,
@@ -121,6 +122,7 @@ export class ViewerState {
     this.steps = v.steps.map(s => ({ ...s }));
     this.slots = v.slots.map(s => ({
       ...s,
+      emptyLabel: s.emptyLabel || 'empty',
       open: s.open || false,
       currentMesh: null,
       objects: s.objects.map(o => ({ ...o, mesh: null }))

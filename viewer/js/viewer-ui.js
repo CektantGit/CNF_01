@@ -59,7 +59,7 @@ export function renderSlots(container, state, onSelect){
       if(slot.textButtons){
         const btn=document.createElement('button');
         btn.className='variant-btn text-option';
-        btn.textContent='None';
+        btn.textContent=slot.emptyLabel || 'None';
         if(slot.selectedIndex===-1) btn.classList.add('selected');
         btn.setAttribute('aria-pressed', slot.selectedIndex===-1);
         btn.addEventListener('click',()=>onSelect(slotIndex,-1,0));
@@ -75,7 +75,7 @@ export function renderSlots(container, state, onSelect){
         thumb.className='thumb';
         const img=document.createElement('img');
         img.src='https://cdn.jsdelivr.net/npm/lucide-static@0.452.0/icons/x.svg';
-        img.alt='None';
+        img.alt=slot.emptyLabel || 'None';
         thumb.appendChild(img);
         if(slot.selectedIndex===-1){
           const check=document.createElement('span');
@@ -88,7 +88,7 @@ export function renderSlots(container, state, onSelect){
         none.appendChild(thumb);
         const label=document.createElement('div');
         label.className='label muted';
-        label.textContent='None';
+        label.textContent=slot.emptyLabel || 'None';
         none.appendChild(label);
         none.addEventListener('click',()=>onSelect(slotIndex,-1,0));
         list.appendChild(none);
