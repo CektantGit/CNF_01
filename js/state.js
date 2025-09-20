@@ -27,12 +27,13 @@ export class ConfiguratorState {
         left: 0,
         right: 0,
         down: 0,
-      up: 0,
-      maxDistance: 0,
-      enabled: false,
-      hidden: false
-    }
-  };
+        up: 0,
+        minDistance: 0,
+        maxDistance: 0,
+        enabled: false,
+        hidden: false
+      }
+    };
   }
 
   _cloneVariant(src, name) {
@@ -70,6 +71,7 @@ export class ConfiguratorState {
       right: src.viewPoint.right,
       down: src.viewPoint.down,
       up: src.viewPoint.up,
+      minDistance: src.viewPoint.minDistance ?? 0,
       maxDistance: src.viewPoint.maxDistance,
       enabled: src.viewPoint.enabled || false,
       hidden: src.viewPoint.hidden || false
@@ -198,17 +200,18 @@ export class ConfiguratorState {
       for(const [vid,vdata] of Object.entries(data.variants)){
         const variant=this._createVariant(vdata.name||'Variant');
         variant.id=vid;
-        variant.viewPoint={
-          position:vdata.viewPoint?.position||[0,0,0],
-          rotation:vdata.viewPoint?.rotation||[0,0,0],
-          left:vdata.viewPoint?.left||0,
-          right:vdata.viewPoint?.right||0,
-        down:vdata.viewPoint?.down||0,
-        up:vdata.viewPoint?.up||0,
-        maxDistance:vdata.viewPoint?.maxDistance||0,
-        enabled:!!vdata.viewPoint?.enabled,
-        hidden:!!vdata.viewPoint?.hidden
-      };
+        variant.viewPoint = {
+          position: vdata.viewPoint?.position || [0,0,0],
+          rotation: vdata.viewPoint?.rotation || [0,0,0],
+          left: vdata.viewPoint?.left || 0,
+          right: vdata.viewPoint?.right || 0,
+          down: vdata.viewPoint?.down || 0,
+          up: vdata.viewPoint?.up || 0,
+          minDistance: vdata.viewPoint?.minDistance || 0,
+          maxDistance: vdata.viewPoint?.maxDistance || 0,
+          enabled: !!vdata.viewPoint?.enabled,
+          hidden: !!vdata.viewPoint?.hidden
+        };
         variant.steps = Object.entries(vdata.steps||{}).map(([id,s])=>({id,name:s.name,index:s.index||0}));
         if(!variant.steps.length) variant.steps=[{id:crypto.randomUUID(),name:'Step 1',index:0}];
         variant.steps.sort((a,b)=>a.index-b.index);
@@ -224,16 +227,17 @@ export class ConfiguratorState {
       }
     } else {
       const variant=this._createVariant('Variant 1');
-      variant.viewPoint={
-        position:data.viewPoint?.position||[0,0,0],
-        rotation:data.viewPoint?.rotation||[0,0,0],
-        left:data.viewPoint?.left||0,
-        right:data.viewPoint?.right||0,
-        down:data.viewPoint?.down||0,
-        up:data.viewPoint?.up||0,
-        maxDistance:data.viewPoint?.maxDistance||0,
-        enabled:!!data.viewPoint?.enabled,
-        hidden:!!data.viewPoint?.hidden
+      variant.viewPoint = {
+        position: data.viewPoint?.position || [0,0,0],
+        rotation: data.viewPoint?.rotation || [0,0,0],
+        left: data.viewPoint?.left || 0,
+        right: data.viewPoint?.right || 0,
+        down: data.viewPoint?.down || 0,
+        up: data.viewPoint?.up || 0,
+        minDistance: data.viewPoint?.minDistance || 0,
+        maxDistance: data.viewPoint?.maxDistance || 0,
+        enabled: !!data.viewPoint?.enabled,
+        hidden: !!data.viewPoint?.hidden
       };
       variant.steps = Object.entries(data.steps||{}).map(([id,s])=>({id,name:s.name,index:s.index||0}));
       if(!variant.steps.length) variant.steps=[{id:crypto.randomUUID(),name:'Step 1',index:0}];
@@ -276,6 +280,7 @@ export class ConfiguratorState {
         right:variant.viewPoint.right,
         down:variant.viewPoint.down,
         up:variant.viewPoint.up,
+        minDistance:variant.viewPoint.minDistance ?? 0,
         maxDistance:variant.viewPoint.maxDistance,
         enabled:variant.viewPoint.enabled,
         hidden:variant.viewPoint.hidden

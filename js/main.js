@@ -25,7 +25,6 @@ const addSlotBtn = document.getElementById('addSlotBtn');
 const prevStepBtn = document.getElementById('prevStep');
 const nextStepBtn = document.getElementById('nextStep');
 const stepNameEl = document.getElementById('stepName');
-const delStepBtn = document.getElementById('delStep');
 const stepControls = document.getElementById('stepControls');
 const stepsListEl = document.getElementById('stepsList');
 const addStepBtn = document.getElementById('addStep');
@@ -37,7 +36,6 @@ const slotOptionsRow = document.getElementById('slotOptions');
 const slotDetailSection = document.getElementById('slotDetail');
 const canBeEmptyChk = document.getElementById('canBeEmpty');
 const textButtonsChk = document.getElementById('textButtons');
-const slotSettingsBtn = document.getElementById('slotSettings');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
@@ -60,15 +58,12 @@ const envUuidInput = document.getElementById('envUuid');
 const loadEnvBtn = document.getElementById('loadEnv');
 const removeEnvBtn = document.getElementById('removeEnv');
 const envInfoEl = document.getElementById('envInfo');
-const varModal = document.getElementById('varModal');
-const varList = document.getElementById('varList');
-const saveVarBtn = document.getElementById('saveVar');
-const closeVarBtn = document.getElementById('closeVar');
 const viewEnabled = document.getElementById('viewEnabled');
 const viewLeft = document.getElementById('viewLeft');
 const viewRight = document.getElementById('viewRight');
 const viewDown = document.getElementById('viewDown');
 const viewUp = document.getElementById('viewUp');
+const viewMinDist = document.getElementById('viewMinDist');
 const viewDist = document.getElementById('viewDist');
 const tabButtons = Array.from(document.querySelectorAll('#tabButtons .tab-button'));
 const panels = {
@@ -79,18 +74,36 @@ const panels = {
 };
 
 outlineBtn.classList.add('active');
+const slotTabButton = tabButtons.find(btn => btn.dataset.tab === 'slot');
 
 let activeTab = 'slot';
 function setActiveTab(tab) {
   if (!panels[tab]) return;
+  if (tab === 'slot' && slotTabButton?.disabled) return;
   activeTab = tab;
   tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
   Object.entries(panels).forEach(([key, panel]) => {
     panel.classList.toggle('active', key === tab);
   });
 }
+function updateSlotTabState() {
+  if (!slotTabButton) return;
+  const hasSlotSelected = state.currentSlotIndex !== -1 && !!state.currentSlot;
+  slotTabButton.disabled = !hasSlotSelected;
+  if (slotTabButton.disabled && activeTab === 'slot') {
+    if (panels.env) {
+      setActiveTab('env');
+    } else {
+      const fallback = Object.keys(panels).find(key => key !== 'slot');
+      if (fallback) setActiveTab(fallback);
+    }
+  }
+}
 tabButtons.forEach(btn => {
-  btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
+  btn.addEventListener('click', () => {
+    if (btn.disabled) return;
+    setActiveTab(btn.dataset.tab);
+  });
 });
 setActiveTab('slot');
 
@@ -213,6 +226,7 @@ function applyViewPreview(){
   } else {
     orbit.maxAzimuthAngle = Infinity;
   }
+  orbit.minDistance = vp.minDistance>0 ? vp.minDistance : 0;
   orbit.maxDistance = vp.maxDistance>0 ? vp.maxDistance : Infinity;
   orbit.enablePan = false;
   orbit.update();
@@ -225,6 +239,7 @@ function resetViewPreview(){
   orbit.maxPolarAngle=Math.PI;
   orbit.minAzimuthAngle=-Infinity;
   orbit.maxAzimuthAngle=Infinity;
+  orbit.minDistance=0;
   orbit.maxDistance=Infinity;
   orbit.enablePan=true;
   orbit.update();
@@ -515,6 +530,7 @@ function syncCameraPanel(){
   if(viewRight) viewRight.value = state.viewPoint.right ?? 0;
   if(viewDown) viewDown.value = state.viewPoint.down ?? 0;
   if(viewUp) viewUp.value = state.viewPoint.up ?? 0;
+  if(viewMinDist) viewMinDist.value = state.viewPoint.minDistance ?? 0;
   if(viewDist) viewDist.value = state.viewPoint.maxDistance ?? 0;
 }
 
@@ -720,6 +736,7 @@ function selectSlot(index){
   const stepIdx = state.steps.findIndex(st=>st.id===state.slots[index]?.stepId);
   if(stepIdx!==-1) state.currentStepIndex = stepIdx;
   renderUI();
+  if (activeTab !== 'slot') setActiveTab('slot');
   activateSlot(state.currentSlot);
   const el = slotListEl.children[state.slots.filter(s=>s.stepId===state.currentStep.id).indexOf(state.currentSlot)+1];
   if (el) el.scrollIntoView({ block: 'nearest' });
@@ -727,10 +744,6 @@ function selectSlot(index){
 
 const slotCallbacks = {
   onSelect: selectSlot,
-  onOpenViewSettings(){
-    setActiveTab('cam');
-    syncCameraPanel();
-  },
   onDelete(id) {
     const mesh = meshes[id];
     if (mesh) {
@@ -851,15 +864,6 @@ function changeStep(delta){
 
 prevStepBtn.addEventListener('click',()=>changeStep(-1));
 nextStepBtn.addEventListener('click',()=>changeStep(1));
-delStepBtn.addEventListener('click',()=>{
-  if(state.steps.length<=1) return;
-  const step = state.currentStep;
-  const idx = state.steps.indexOf(step);
-  state.steps.splice(idx,1);
-  state.slots.forEach(s=>{ if(s.stepId===step.id) s.stepId = state.steps[0].id; });
-  if(state.currentStepIndex>=state.steps.length) state.currentStepIndex=0;
-  renderUI();
-});
 
 addVariantBtn.addEventListener('click',()=>{
   state.addVariant();
@@ -919,6 +923,7 @@ viewEnabled?.addEventListener('change',()=>{
   { el: viewRight, prop: 'right' },
   { el: viewDown, prop: 'down' },
   { el: viewUp, prop: 'up' },
+  { el: viewMinDist, prop: 'minDistance' },
   { el: viewDist, prop: 'maxDistance' }
 ].forEach(({el, prop})=>{
   el?.addEventListener('change',()=>{
@@ -1003,25 +1008,6 @@ inheritBtn.addEventListener('click', () => {
   if (slot) loadSlot(slot, true);
 });
 
-function renderVarModal(slot){
-  varList.innerHTML='';
-  slot.objects.forEach((obj,oIdx)=>{
-    obj.materials.forEach((mat,mIdx)=>{
-      const row=document.createElement('div');
-      row.className='var-row';
-      const label=document.createElement('label');
-      label.textContent=`${obj.name} - ${mat.name}`;
-      const input=document.createElement('input');
-      input.type='text';
-      input.value=obj.colorNames?.[mIdx] || `${obj.name} ${mat.name}`;
-      input.dataset.idx=`${oIdx}-${mIdx}`;
-      row.appendChild(label);
-      row.appendChild(input);
-      varList.appendChild(row);
-    });
-  });
-}
-
 canBeEmptyChk.addEventListener('change', () => {
   const slot = state.currentSlot;
   if (slot) slot.canBeEmpty = canBeEmptyChk.checked;
@@ -1030,28 +1016,6 @@ canBeEmptyChk.addEventListener('change', () => {
 textButtonsChk.addEventListener('change', () => {
   const slot = state.currentSlot;
   if (slot) slot.textButtons = textButtonsChk.checked;
-});
-
-slotSettingsBtn.addEventListener('click', () => {
-  const slot = state.currentSlot;
-  if (!slot) return;
-  renderVarModal(slot);
-  varModal.style.display = 'block';
-});
-
-closeVarBtn.addEventListener('click', () => {
-  varModal.style.display = 'none';
-});
-
-saveVarBtn.addEventListener('click', () => {
-  const slot = state.currentSlot;
-  if (!slot) { varModal.style.display = 'none'; return; }
-  varList.querySelectorAll('input').forEach(inp => {
-    const [oIdx, mIdx] = inp.dataset.idx.split('-').map(Number);
-    if (!slot.objects[oIdx].colorNames) slot.objects[oIdx].colorNames = [];
-    slot.objects[oIdx].colorNames[mIdx] = inp.value;
-  });
-  varModal.style.display = 'none';
 });
 
 async function handleImport(data) {
@@ -1093,6 +1057,7 @@ function renderUI(){
   updatePanels();
   syncCameraPanel();
   syncEnvironmentPanel();
+  updateSlotTabState();
 }
 
 renderUI();

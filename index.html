@@ -31,7 +31,6 @@
         <button id="prevStep">Prev</button>
         <span id="stepName"></span>
         <button id="nextStep">Next</button>
-        <button id="delStep" class="action-btn">Delete step</button>
       </div>
       <button id="addSlotBtn" class="action-btn">Add slot</button>
       <ul id="slots"></ul>
@@ -75,7 +74,6 @@
           <div id="slotOptions">
             <label><input type="checkbox" id="canBeEmpty"> Can be empty</label>
             <label><input type="checkbox" id="textButtons"> Button text</label>
-            <button id="slotSettings" class="action-btn">Settings</button>
           </div>
           <div id="objects"></div>
         </div>
@@ -101,21 +99,38 @@
         </details>
       </div>
       <div class="panel" id="panel-cam">
-        <label class="cam-toggle"><input type="checkbox" id="viewEnabled"> Activate view point</label>
-        <label>Left angle <input type="number" id="viewLeft"/></label>
-        <label>Right angle <input type="number" id="viewRight"/></label>
-        <label>Down angle <input type="number" id="viewDown"/></label>
-        <label>Up angle <input type="number" id="viewUp"/></label>
-        <label>Max distance <input type="number" id="viewDist"/></label>
+        <details open>
+          <summary>Camera</summary>
+          <div class="details-body">
+            <div class="toggle-row">
+              <span>Activate view point</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="viewEnabled">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <label>Left angle <input type="number" id="viewLeft"/></label>
+            <label>Right angle <input type="number" id="viewRight"/></label>
+            <label>Down angle <input type="number" id="viewDown"/></label>
+            <label>Up angle <input type="number" id="viewUp"/></label>
+            <label>Min distance <input type="number" id="viewMinDist"/></label>
+            <label>Max distance <input type="number" id="viewDist"/></label>
+          </div>
+        </details>
       </div>
       <div class="panel" id="panel-world">
-        <label>Environment UUID <input type="text" id="envUuid"></label>
-        <div class="world-actions">
-          <button id="loadEnv" class="action-btn">Load</button>
-          <button id="removeEnv" class="action-btn">Remove</button>
-        </div>
-        <div id="envInfo" class="env-info"></div>
-        <button id="lockBtn" class="action-btn active">Lock</button>
+        <details open>
+          <summary>Environment</summary>
+          <div class="details-body">
+            <label>Environment UUID <input type="text" id="envUuid"></label>
+            <div class="world-actions">
+              <button id="loadEnv" class="action-btn">Load</button>
+              <button id="removeEnv" class="action-btn">Remove</button>
+            </div>
+            <div id="envInfo" class="env-info"></div>
+            <button id="lockBtn" class="action-btn active">Lock</button>
+          </div>
+        </details>
       </div>
     </div>
   </div>
@@ -130,13 +145,6 @@
       </div>
     </div>
     <button id="closeModal">Close</button>
-  </div>
-  <div id="varModal">
-    <div class="modal-box">
-      <div id="varList"></div>
-      <button id="saveVar" class="action-btn">Save</button>
-    </div>
-    <button id="closeVar">Close</button>
   </div>
   <div id="loadingOverlay">
     <div class="loading-box">

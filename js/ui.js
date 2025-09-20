@@ -1,24 +1,16 @@
-export function renderSlots(state, container, { onSelect, onDelete, onToggleHide, onOpenViewSettings }, stepId) {
+export function renderSlots(state, container, { onSelect, onDelete, onToggleHide }, stepId) {
   container.innerHTML = '';
   const vp = document.createElement('li');
   vp.className = 'slot' + (state.currentSlotIndex === -1 ? ' selected' : '');
   vp.addEventListener('click', () => onSelect('view'));
   const nameSpan = document.createElement('span');
   nameSpan.textContent = 'Point view';
-  const settingsBtn = document.createElement('button');
-  settingsBtn.textContent = 'Setting view';
-  settingsBtn.className = 'action-btn';
-  settingsBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    onOpenViewSettings?.();
-  });
   const hideBtn = document.createElement('button');
   hideBtn.textContent = 'Hide';
   hideBtn.className = 'hide-btn' + (state.viewPoint.hidden ? ' active' : '');
   hideBtn.addEventListener('click', e => { e.stopPropagation(); onToggleHide('view'); });
   const actions = document.createElement('div');
   actions.className = 'slot-actions';
-  actions.appendChild(settingsBtn);
   actions.appendChild(hideBtn);
   vp.appendChild(nameSpan);
   vp.appendChild(actions);
@@ -117,15 +109,10 @@ export function renderSlotsMobile(state, container, slotCallbacks, objectCallbac
   sum.addEventListener('click',e=>{slotCallbacks.onSelect('view');});
   const actions=document.createElement('span');
   actions.className='slot-actions';
-  const settings=document.createElement('button');
-  settings.textContent='Setting view';
-  settings.className='action-btn';
-  settings.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onOpenViewSettings?.();});
   const hide=document.createElement('button');
   hide.textContent='Hide';
   hide.className='hide-btn'+(state.viewPoint.hidden?' active':'');
   hide.addEventListener('click',e=>{e.stopPropagation();slotCallbacks.onToggleHide('view');});
-  actions.appendChild(settings);
   actions.appendChild(hide);
   sum.appendChild(actions);
   vp.appendChild(sum);

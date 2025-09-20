@@ -112,6 +112,7 @@ function applyViewPoint(){
   } else {
     controls.maxAzimuthAngle = Infinity;
   }
+  controls.minDistance = vp.minDistance>0?vp.minDistance:0;
   controls.maxDistance = vp.maxDistance>0?vp.maxDistance:Infinity;
   controls.enablePan = false;
   controls.update();
@@ -124,6 +125,7 @@ function resetViewPoint(){
   controls.maxPolarAngle=Math.PI;
   controls.minAzimuthAngle=-Infinity;
   controls.maxAzimuthAngle=Infinity;
+  controls.minDistance=0;
   controls.maxDistance=Infinity;
   controls.enablePan=true;
   controls.update();
