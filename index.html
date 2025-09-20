@@ -58,13 +58,47 @@
         <button id="gridBtn" class="action-btn">Grid</button>
       </div>
       <div id="tabButtons">
-        <button class="tab-button active" data-tab="slot">SLT</button>
+        <button class="tab-button" data-tab="info">INF</button>
+        <button class="tab-button" data-tab="slot">SLT</button>
         <button class="tab-button" data-tab="env">ENV</button>
         <button class="tab-button" data-tab="cam">CAM</button>
         <button class="tab-button" data-tab="world">WRD</button>
       </div>
     </div>
     <div id="sidePanel">
+      <div class="panel" id="panel-info">
+        <button id="uploadConfig" class="action-btn primary">Upload</button>
+        <div class="info-grid">
+          <div class="info-field">
+            <span class="info-label">UUID</span>
+            <span class="info-value" id="infoUuid">—</span>
+          </div>
+          <div class="info-field">
+            <span class="info-label">Version</span>
+            <span class="info-value" id="infoVersion">—</span>
+          </div>
+          <div class="info-field">
+            <span class="info-label">Type</span>
+            <span class="info-value" id="infoType">—</span>
+          </div>
+          <div class="info-field">
+            <span class="info-label">Owner UUID</span>
+            <span class="info-value" id="infoOwner">—</span>
+          </div>
+        </div>
+        <label class="info-edit">
+          <span>Name</span>
+          <input type="text" id="infoName" placeholder="Configuration name" />
+        </label>
+        <label class="info-edit">
+          <span>Description</span>
+          <textarea id="infoDescription" rows="3" placeholder="Configuration description"></textarea>
+        </label>
+        <label class="info-edit">
+          <span>Auth token</span>
+          <input type="text" id="authTokenInput" placeholder="Bearer token" />
+        </label>
+      </div>
       <div class="panel active" id="panel-slot">
         <div class="panel-section" id="slotDetail">
           <div id="objectActions">

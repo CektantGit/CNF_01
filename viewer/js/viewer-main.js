@@ -5,7 +5,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { viewInAR } from './ar.js';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots, renderVariants } from './viewer-ui.js';
-import { fetchObjectDetails } from './viewer-api.js';
+import { fetchObjectDetails, fetchConfiguration } from './viewer-api.js';
 
 const container = document.getElementById('viewerCanvas');
 const slotPanel = document.getElementById('slotPanel');
@@ -71,6 +71,7 @@ function animate() {
 animate();
 
 const state = new ViewerState();
+let baseConfigUuid = null;
 const loader = new GLTFLoader();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -385,11 +386,28 @@ arBtn.addEventListener('click', async () => {
 (async () => {
   showLoading(0, true);
   try {
-    const res = await fetch('default-config.json');
-    const data = await res.json();
-    await state.loadConfig(data, fetchObjectDetails);
-    const params=new URLSearchParams(location.search);
-    const cfg=params.get('cfg');
+    const params = new URLSearchParams(location.search);
+    baseConfigUuid = params.get('uuid');
+    let configData = null;
+    if (baseConfigUuid) {
+      const remote = await fetchConfiguration(baseConfigUuid);
+      if (remote?.uuid) {
+        baseConfigUuid = remote.uuid;
+      }
+      if (remote?.data) {
+        try {
+          configData = JSON.parse(remote.data);
+        } catch (err) {
+          console.error('Remote config parse failed', err);
+        }
+      }
+    }
+    if (!configData) {
+      const res = await fetch('default-config.json');
+      configData = await res.json();
+    }
+    await state.loadConfig(configData, fetchObjectDetails);
+    const cfg = params.get('cfg');
     if(cfg) applyEncodedConfig(cfg);
     await loadAll();
     if (state.viewPoint.enabled) {
@@ -398,9 +416,9 @@ arBtn.addEventListener('click', async () => {
       resetViewPoint();
     }
     updateShare();
-    hideLoading();
   } catch (err) {
-    console.error('Default config load failed', err);
+    console.error('Config load failed', err);
+  } finally {
     hideLoading();
   }
 })();
@@ -450,7 +468,12 @@ function updateShare(){
   }
   arBtn.style.display='none';
   qrOverlay.style.display='inline-flex';
-  const url = location.origin + location.pathname + '?cfg=' + encodeConfig();
+  const params = new URLSearchParams();
+  if(baseConfigUuid){
+    params.set('uuid', baseConfigUuid);
+  }
+  params.set('cfg', encodeConfig());
+  const url = `${location.origin}${location.pathname}?${params.toString()}`;
   qrCanvas.innerHTML = '';
   new QRCode(qrCanvas, {
     text: url,

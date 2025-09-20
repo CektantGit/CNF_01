@@ -12,7 +12,7 @@ import { OutputPass } from 'OutputPass';
 import { ConfiguratorState } from './state.js';
 import { renderSlots, renderObjects, renderSlotsMobile } from './ui.js';
 import { openObjectModal } from './modal.js';
-import { fetchObjectDetails } from './api.js';
+import { fetchObjectDetails, fetchConfiguration, uploadConfiguration } from './api.js';
 
 const state = new ConfiguratorState();
 
@@ -67,11 +67,20 @@ const viewMinDist = document.getElementById('viewMinDist');
 const viewDist = document.getElementById('viewDist');
 const tabButtons = Array.from(document.querySelectorAll('#tabButtons .tab-button'));
 const panels = {
+  info: document.getElementById('panel-info'),
   slot: document.getElementById('panel-slot'),
   env: document.getElementById('panel-env'),
   cam: document.getElementById('panel-cam'),
   world: document.getElementById('panel-world')
 };
+const uploadConfigBtn = document.getElementById('uploadConfig');
+const infoUuidEl = document.getElementById('infoUuid');
+const infoVersionEl = document.getElementById('infoVersion');
+const infoTypeEl = document.getElementById('infoType');
+const infoOwnerEl = document.getElementById('infoOwner');
+const infoNameInput = document.getElementById('infoName');
+const infoDescriptionInput = document.getElementById('infoDescription');
+const authTokenInput = document.getElementById('authTokenInput');
 
 outlineBtn.classList.add('active');
 const slotTabButton = tabButtons.find(btn => btn.dataset.tab === 'slot');
@@ -282,6 +291,63 @@ function updatePanels(){
   }
   if (!hasSlot) {
     objectsContainer.innerHTML = '';
+  }
+}
+
+function setInputIfIdle(el, value){
+  if (!el) return;
+  if (document.activeElement === el) return;
+  if (el.value !== value) el.value = value;
+}
+
+function syncInfoPanel(){
+  if(!infoUuidEl) return;
+  infoUuidEl.textContent = state.meta.uuid || '—';
+  infoVersionEl.textContent = (state.meta.version ?? '') !== '' ? String(state.meta.version) : '—';
+  infoTypeEl.textContent = state.meta.type || '—';
+  infoOwnerEl.textContent = state.meta.ownerId || '—';
+  setInputIfIdle(infoNameInput, state.meta.name || '');
+  setInputIfIdle(infoDescriptionInput, state.meta.description || '');
+  setInputIfIdle(authTokenInput, state.authToken || '');
+}
+
+async function loadConfigurationFromUuid(uuid){
+  if(!uuid) return;
+  state.setMeta({ uuid });
+  syncInfoPanel();
+  showLoading();
+  let imported = false;
+  try{
+    const res = await fetchConfiguration(uuid);
+    if(res){
+      const parsedVersion = Number(res.version);
+      state.setMeta({
+        uuid: res.uuid || uuid,
+        version: Number.isFinite(parsedVersion) ? parsedVersion : state.meta.version,
+        type: res.type || state.meta.type || '',
+        name: res.name || '',
+        description: res.description || '',
+        ownerId: res.ownerId || state.meta.ownerId || ''
+      });
+      syncInfoPanel();
+      if(res.data){
+        try{
+          const data = JSON.parse(res.data);
+          await handleImport(data);
+          imported = true;
+        }catch(err){
+          console.error('Failed to parse configuration data', err);
+        }
+      }
+    }
+  }catch(err){
+    console.error('Failed to load configuration', err);
+  }finally{
+    hideLoading();
+    if(!imported){
+      renderUI();
+      reloadScene();
+    }
   }
 }
 
@@ -847,6 +913,57 @@ importInput && importInput.addEventListener('change', async e => {
   if (importInput) importInput.value = '';
 });
 
+infoNameInput?.addEventListener('input', () => {
+  state.setMeta({ name: infoNameInput.value });
+});
+
+infoDescriptionInput?.addEventListener('input', () => {
+  state.setMeta({ description: infoDescriptionInput.value });
+});
+
+authTokenInput?.addEventListener('input', () => {
+  state.setAuthToken(authTokenInput.value);
+});
+
+uploadConfigBtn?.addEventListener('click', async () => {
+  if (!state.meta.uuid) {
+    alert('UUID is missing.');
+    return;
+  }
+  if (!state.meta.ownerId) {
+    alert('Owner UUID is missing.');
+    return;
+  }
+  const token = state.authToken?.trim();
+  if (!token) {
+    alert('Enter the authorization token.');
+    return;
+  }
+  const currentVersion = Number.isFinite(Number(state.meta.version)) ? Number(state.meta.version) : 0;
+  const nextVersion = currentVersion + 1;
+  const payload = {
+    uuid: state.meta.uuid,
+    version: nextVersion,
+    type: state.meta.type || 'config',
+    data: state.exportJSON(),
+    name: state.meta.name || '',
+    description: state.meta.description || '',
+    ownerId: state.meta.ownerId
+  };
+  try {
+    showLoading();
+    await uploadConfiguration(payload, token);
+    state.setMeta({ version: nextVersion });
+    syncInfoPanel();
+    alert('Configuration uploaded.');
+  } catch (err) {
+    const message = err && err.message ? err.message : 'Unknown error';
+    alert(`Upload failed: ${message}`);
+  } finally {
+    hideLoading();
+  }
+});
+
 viewToggleBtn.addEventListener('click',()=>{
   viewPreview = !viewPreview;
   viewToggleBtn.classList.toggle('active', viewPreview);
@@ -1058,6 +1175,7 @@ function renderUI(){
   syncCameraPanel();
   syncEnvironmentPanel();
   updateSlotTabState();
+  syncInfoPanel();
 }
 
 renderUI();
@@ -1066,3 +1184,11 @@ textButtonsChk.checked = state.currentSlot?.textButtons || false;
 activateSlot(state.currentSlot);
 updateTransformButtons();
 reloadScene();
+
+const urlParams = new URLSearchParams(location.search);
+const configUuid = urlParams.get('uuid');
+if(configUuid){
+  loadConfigurationFromUuid(configUuid);
+} else {
+  syncInfoPanel();
+}

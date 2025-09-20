@@ -5,6 +5,15 @@ export class ConfiguratorState {
     this.currentSlotIndex = -1;
     this.currentStepIndex = 0;
     this.environment = null;
+    this.meta = {
+      uuid: '',
+      version: null,
+      type: '',
+      name: '',
+      description: '',
+      ownerId: ''
+    };
+    this.authToken = '';
     const def = this._createVariant('Variant 1');
     this.variants.push(def);
   }
@@ -290,5 +299,13 @@ export class ConfiguratorState {
     const out={version:2,variants:variantsOut};
     if(this.environment){ out.environment={uuid:this.environment.uuid,position:this.environment.transform.position,rotation:this.environment.transform.rotation,scale:this.environment.transform.scale}; }
     return JSON.stringify(out,null,2);
+  }
+
+  setMeta(meta = {}){
+    this.meta = { ...this.meta, ...meta };
+  }
+
+  setAuthToken(token = ''){
+    this.authToken = token;
   }
 }
