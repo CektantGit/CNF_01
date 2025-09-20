@@ -176,13 +176,6 @@ const effectFXAA = new ShaderPass(FXAAShader);
 effectFXAA.uniforms['resolution'].value.set(1 / viewer.clientWidth, 1 / viewer.clientHeight);
 composer.addPass(effectFXAA);
 
-// lighting similar to gltf-viewer defaults
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-scene.add(ambientLight);
-const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-dirLight.position.set(5, 10, 7.5);
-scene.add(dirLight);
-
 const grid = new THREE.GridHelper(10, 10);
 grid.visible = false;
 scene.add(grid);

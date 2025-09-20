@@ -46,12 +46,6 @@ const pmrem = new THREE.PMREMGenerator(renderer);
     }
   );
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-scene.add(ambient);
-const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-dirLight.position.set(5, 10, 7.5);
-scene.add(dirLight);
-
 const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 function resize() {
