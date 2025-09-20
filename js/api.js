@@ -47,7 +47,7 @@ export async function uploadConfiguration(payload, token) {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    const res = await fetch(`${API_STAGE_BASE}/obj/CreateConfiguration`, {
+    const res = await fetch(`${API_STAGE_BASE}/obj/UpdateConfiguration`, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload)
