@@ -6,7 +6,7 @@ export class ViewerState {
     this.steps = [];
     this.environment = null;
     this.currentStepIndex = 0;
-    this.viewPoint = { position:[0,0,0], rotation:[0,0,0], left:0, right:0, down:0, up:0, maxDistance:0, allowMovement:false };
+    this.viewPoint = { position:[0,0,0], rotation:[0,0,0], left:0, right:0, down:0, up:0, minDistance:0, maxDistance:0 };
   }
 
   async _buildVariant(src, fetchDetails, fallbackName) {
@@ -38,6 +38,7 @@ export class ViewerState {
         name: slotData.name,
         canBeEmpty: slotData.canBeEmpty,
         textButtons: slotData.textButtons || false,
+        emptyLabel: slotData.emptyLabel || slotData.emptyName || 'empty',
         objects: [],
         selectedIndex: slotData.canBeEmpty ? -1 : 0,
         open: false,
@@ -61,6 +62,11 @@ export class ViewerState {
           mesh: null
         });
       }
+      if (!slot.objects.length) {
+        slot.selectedIndex = -1;
+      } else if (slot.selectedIndex >= slot.objects.length) {
+        slot.selectedIndex = 0;
+      }
       slots.push(slot);
     }
     const viewPoint = {
@@ -70,8 +76,8 @@ export class ViewerState {
       right: src.viewPoint?.right || 0,
       down: src.viewPoint?.down || 0,
       up: src.viewPoint?.up || 0,
+      minDistance: src.viewPoint?.minDistance || 0,
       maxDistance: src.viewPoint?.maxDistance || 0,
-      allowMovement: !!src.viewPoint?.allowMovement,
       enabled: !!src.viewPoint?.enabled
     };
     return { id: src.id || crypto.randomUUID(), name: src.name || fallbackName, steps, slots, viewPoint };
@@ -116,10 +122,18 @@ export class ViewerState {
     this.steps = v.steps.map(s => ({ ...s }));
     this.slots = v.slots.map(s => ({
       ...s,
+      emptyLabel: s.emptyLabel || 'empty',
       open: s.open || false,
       currentMesh: null,
       objects: s.objects.map(o => ({ ...o, mesh: null }))
     }));
+    this.slots.forEach(slot => {
+      if (!slot.objects.length) {
+        slot.selectedIndex = -1;
+      } else if (slot.selectedIndex >= slot.objects.length) {
+        slot.selectedIndex = 0;
+      }
+    });
     this.currentStepIndex = 0;
     this.viewPoint = { ...v.viewPoint };
   }

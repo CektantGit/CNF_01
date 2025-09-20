@@ -114,8 +114,8 @@
         "right": 30,
         "down": 25,
         "up": 45,
+        "minDistance": 0,
         "maxDistance": 4,
-        "allowMovement": false,
         "enabled": true,
         "hidden": false
       }

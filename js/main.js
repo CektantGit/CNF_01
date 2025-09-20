@@ -11,13 +11,13 @@ import { FXAAShader } from 'FXAAShader';
 import { OutputPass } from 'OutputPass';
 import { ConfiguratorState } from './state.js';
 import { renderSlots, renderObjects, renderSlotsMobile } from './ui.js';
-import { openObjectModal, openStepsModal } from './modal.js';
-import { fetchObjectDetails } from './api.js';
+import { openObjectModal } from './modal.js';
+import { fetchObjectDetails, fetchConfiguration, uploadConfiguration } from './api.js';
 
 const state = new ConfiguratorState();
 
 const slotListEl = document.getElementById('slots');
-const variantSelect = document.getElementById('variantSelect');
+const variantListEl = document.getElementById('variantList');
 const addVariantBtn = document.getElementById('addVariant');
 const delVariantBtn = document.getElementById('delVariant');
 const renVariantBtn = document.getElementById('renVariant');
@@ -25,23 +25,23 @@ const addSlotBtn = document.getElementById('addSlotBtn');
 const prevStepBtn = document.getElementById('prevStep');
 const nextStepBtn = document.getElementById('nextStep');
 const stepNameEl = document.getElementById('stepName');
-const delStepBtn = document.getElementById('delStep');
 const stepControls = document.getElementById('stepControls');
+const stepsListEl = document.getElementById('stepsList');
+const addStepBtn = document.getElementById('addStep');
 const addObjectBtn = document.getElementById('addObjectBtn');
 const inheritBtn = document.getElementById('inheritBtn');
 const objectsContainer = document.getElementById('objects');
 const objectActionsRow = document.getElementById('objectActions');
 const slotOptionsRow = document.getElementById('slotOptions');
+const slotDetailSection = document.getElementById('slotDetail');
+const buttonTextSection = document.getElementById('buttonTextSection');
+const buttonTextBody = document.getElementById('buttonTextBody');
 const canBeEmptyChk = document.getElementById('canBeEmpty');
 const textButtonsChk = document.getElementById('textButtons');
-const slotSettingsBtn = document.getElementById('slotSettings');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importInput = document.getElementById('importInput');
-const stepsBtn = document.getElementById('stepsBtn');
-const viewBtn = document.getElementById('viewBtn');
 const viewToggleBtn = document.getElementById('viewToggle');
-const stepsModal = document.getElementById('stepsModal');
 const modalEl = document.getElementById('objectModal');
 const moveBtn = document.getElementById('moveBtn');
 const rotateBtn = document.getElementById('rotateBtn');
@@ -55,28 +55,70 @@ const coordY = document.getElementById('coordY');
 const coordZ = document.getElementById('coordZ');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const progressBar = document.getElementById('progressBar');
-const envBtn = document.getElementById('envBtn');
 const lockBtn = document.getElementById('lockBtn');
-const envModal = document.getElementById('envModal');
 const envUuidInput = document.getElementById('envUuid');
 const loadEnvBtn = document.getElementById('loadEnv');
 const removeEnvBtn = document.getElementById('removeEnv');
-const closeEnvBtn = document.getElementById('closeEnv');
-const varModal = document.getElementById('varModal');
-const varList = document.getElementById('varList');
-const saveVarBtn = document.getElementById('saveVar');
-const closeVarBtn = document.getElementById('closeVar');
-const viewModal = document.getElementById('viewModal');
+const envInfoEl = document.getElementById('envInfo');
+const viewEnabled = document.getElementById('viewEnabled');
 const viewLeft = document.getElementById('viewLeft');
 const viewRight = document.getElementById('viewRight');
 const viewDown = document.getElementById('viewDown');
 const viewUp = document.getElementById('viewUp');
+const viewMinDist = document.getElementById('viewMinDist');
 const viewDist = document.getElementById('viewDist');
-const viewMove = document.getElementById('viewMove');
-const viewEnabled = document.getElementById('viewEnabled');
-const saveViewBtn = document.getElementById('saveView');
-const closeViewBtn = document.getElementById('closeView');
+const tabButtons = Array.from(document.querySelectorAll('#tabButtons .tab-button'));
+const panels = {
+  info: document.getElementById('panel-info'),
+  slot: document.getElementById('panel-slot'),
+  env: document.getElementById('panel-env'),
+  cam: document.getElementById('panel-cam'),
+  world: document.getElementById('panel-world')
+};
+const uploadConfigBtn = document.getElementById('uploadConfig');
+const infoUuidEl = document.getElementById('infoUuid');
+const infoVersionEl = document.getElementById('infoVersion');
+const infoTypeEl = document.getElementById('infoType');
+const infoOwnerEl = document.getElementById('infoOwner');
+const infoNameInput = document.getElementById('infoName');
+const infoDescriptionInput = document.getElementById('infoDescription');
+const authTokenInput = document.getElementById('authTokenInput');
+
 outlineBtn.classList.add('active');
+const slotTabButton = tabButtons.find(btn => btn.dataset.tab === 'slot');
+
+let activeTab = 'slot';
+function setActiveTab(tab) {
+  if (!panels[tab]) return;
+  if (tab === 'slot' && slotTabButton?.disabled) return;
+  activeTab = tab;
+  tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+  Object.entries(panels).forEach(([key, panel]) => {
+    panel.classList.toggle('active', key === tab);
+  });
+}
+function updateSlotTabState() {
+  if (!slotTabButton) return;
+  const hasSlotSelected = state.currentSlotIndex !== -1 && !!state.currentSlot;
+  slotTabButton.disabled = !hasSlotSelected;
+  if (slotTabButton.disabled && activeTab === 'slot') {
+    if (panels.env) {
+      setActiveTab('env');
+    } else {
+      const fallback = Object.keys(panels).find(key => key !== 'slot');
+      if (fallback) setActiveTab(fallback);
+    }
+  }
+}
+tabButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.disabled) return;
+    setActiveTab(btn.dataset.tab);
+  });
+});
+setActiveTab('slot');
+
+let variantEditIndex = null;
 
 // THREE.js setup
 const viewer = document.getElementById('viewer');
@@ -136,13 +178,6 @@ const effectFXAA = new ShaderPass(FXAAShader);
 effectFXAA.uniforms['resolution'].value.set(1 / viewer.clientWidth, 1 / viewer.clientHeight);
 composer.addPass(effectFXAA);
 
-// lighting similar to gltf-viewer defaults
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-scene.add(ambientLight);
-const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-dirLight.position.set(5, 10, 7.5);
-scene.add(dirLight);
-
 const grid = new THREE.GridHelper(10, 10);
 grid.visible = false;
 scene.add(grid);
@@ -195,8 +230,9 @@ function applyViewPreview(){
   } else {
     orbit.maxAzimuthAngle = Infinity;
   }
+  orbit.minDistance = vp.minDistance>0 ? vp.minDistance : 0;
   orbit.maxDistance = vp.maxDistance>0 ? vp.maxDistance : Infinity;
-  orbit.enablePan = vp.allowMovement;
+  orbit.enablePan = false;
   orbit.update();
 }
 
@@ -207,6 +243,7 @@ function resetViewPreview(){
   orbit.maxPolarAngle=Math.PI;
   orbit.minAzimuthAngle=-Infinity;
   orbit.maxAzimuthAngle=Infinity;
+  orbit.minDistance=0;
   orbit.maxDistance=Infinity;
   orbit.enablePan=true;
   orbit.update();
@@ -241,15 +278,75 @@ let transformMode = null;
 const axisNames = ['x','y','z'];
 
 function updatePanels(){
-  if(state.currentSlotIndex===-1){
-    objectActionsRow.style.display='none';
-    slotOptionsRow.style.display='none';
-    viewBtn.style.display='inline-block';
-    objectsContainer.innerHTML='';
-  }else{
-    objectActionsRow.style.display='flex';
-    slotOptionsRow.style.display='flex';
-    viewBtn.style.display='none';
+  const hasSlot = state.currentSlotIndex !== -1 && !!state.currentSlot;
+  objectActionsRow.style.display = hasSlot ? 'flex' : 'none';
+  slotOptionsRow.style.display = hasSlot ? 'flex' : 'none';
+  if (slotDetailSection) {
+    slotDetailSection.style.display = hasSlot && !isMobile() ? 'flex' : 'none';
+  }
+  if(buttonTextSection){
+    const showButtonText = hasSlot && !!state.currentSlot?.textButtons;
+    buttonTextSection.style.display = showButtonText ? 'block' : 'none';
+  }
+  if (!hasSlot) {
+    objectsContainer.innerHTML = '';
+  }
+}
+
+function setInputIfIdle(el, value){
+  if (!el) return;
+  if (document.activeElement === el) return;
+  if (el.value !== value) el.value = value;
+}
+
+function syncInfoPanel(){
+  if(!infoUuidEl) return;
+  infoUuidEl.textContent = state.meta.uuid || '—';
+  infoVersionEl.textContent = (state.meta.version ?? '') !== '' ? String(state.meta.version) : '—';
+  infoTypeEl.textContent = state.meta.type || '—';
+  infoOwnerEl.textContent = state.meta.ownerId || '—';
+  setInputIfIdle(infoNameInput, state.meta.name || '');
+  setInputIfIdle(infoDescriptionInput, state.meta.description || '');
+  setInputIfIdle(authTokenInput, state.authToken || '');
+}
+
+async function loadConfigurationFromUuid(uuid){
+  if(!uuid) return;
+  state.setMeta({ uuid });
+  syncInfoPanel();
+  showLoading();
+  let imported = false;
+  try{
+    const res = await fetchConfiguration(uuid);
+    if(res){
+      const parsedVersion = Number(res.version);
+      state.setMeta({
+        uuid: res.uuid || uuid,
+        version: Number.isFinite(parsedVersion) ? parsedVersion : state.meta.version,
+        type: res.type || state.meta.type || '',
+        name: res.name || '',
+        description: res.description || '',
+        ownerId: res.ownerId || state.meta.ownerId || ''
+      });
+      syncInfoPanel();
+      if(res.data){
+        try{
+          const data = JSON.parse(res.data);
+          await handleImport(data);
+          imported = true;
+        }catch(err){
+          console.error('Failed to parse configuration data', err);
+        }
+      }
+    }
+  }catch(err){
+    console.error('Failed to load configuration', err);
+  }finally{
+    hideLoading();
+    if(!imported){
+      renderUI();
+      reloadScene();
+    }
   }
 }
 
@@ -381,13 +478,250 @@ function reloadScene(){
 }
 
 function renderVariants(){
-  variantSelect.innerHTML='';
-  state.variants.forEach((v,i)=>{
-    const opt=document.createElement('option');
-    opt.value=i; opt.textContent=v.name;
-    variantSelect.appendChild(opt);
+  if(!variantListEl) return;
+  variantListEl.innerHTML='';
+  if(variantEditIndex!=null && variantEditIndex>=state.variants.length){
+    variantEditIndex = null;
+  }
+  state.variants.forEach((variant,index)=>{
+    const row=document.createElement('div');
+    row.className='variant-row'+(index===state.currentVariantIndex?' selected':'');
+    if(variantEditIndex===index){
+      const input=document.createElement('input');
+      input.type='text';
+      input.value=variant.name;
+      const commit=()=>{
+        const value=input.value.trim();
+        if(!value){
+          input.value=variant.name;
+          input.focus();
+          input.select();
+          return;
+        }
+        variant.name=value;
+        variantEditIndex=null;
+        renderVariants();
+      };
+      input.addEventListener('blur',commit);
+      input.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){ commit(); }
+        if(e.key==='Escape'){ variantEditIndex=null; renderVariants(); }
+      });
+      row.appendChild(input);
+      setTimeout(()=>{ input.focus(); input.select(); },0);
+    }else{
+      const name=document.createElement('span');
+      name.textContent=variant.name;
+      row.appendChild(name);
+    }
+    row.addEventListener('click',()=>{
+      if(variantEditIndex===index) return;
+      if(state.currentVariantIndex===index) return;
+      state.currentVariantIndex=index;
+      state.currentSlotIndex=-1;
+      state.currentStepIndex=0;
+      renderUI();
+      reloadScene();
+    });
+    variantListEl.appendChild(row);
   });
-  variantSelect.value=state.currentVariantIndex;
+  delVariantBtn.disabled = state.variants.length <= 1;
+}
+
+function renderStepsEditor(){
+  if(!stepsListEl) return;
+  stepsListEl.innerHTML='';
+  state.steps.forEach((step, stepIndex)=>{
+    const row=document.createElement('div');
+    row.className='step-row';
+    const header=document.createElement('div');
+    header.className='step-header';
+    const nameInput=document.createElement('input');
+    nameInput.type='text';
+    nameInput.value=step.name;
+    nameInput.addEventListener('change',()=>{
+      const value=nameInput.value.trim();
+      if(!value){
+        nameInput.value = step.name;
+        return;
+      }
+      step.name = value;
+      if(stepIndex===state.currentStepIndex){
+        stepNameEl.textContent = step.name;
+      }
+    });
+    header.appendChild(nameInput);
+    const delBtn=document.createElement('button');
+    delBtn.textContent='Delete';
+    delBtn.className='action-btn';
+    delBtn.disabled = state.steps.length <= 1;
+    delBtn.addEventListener('click',()=>{
+      if(state.steps.length<=1) return;
+      const removed = state.steps.splice(stepIndex,1)[0];
+      state.slots.forEach(s=>{ if(s.stepId===removed.id) s.stepId = state.steps[0].id; });
+      if(state.currentStepIndex>=state.steps.length) state.currentStepIndex=0;
+      renderUI();
+    });
+    header.appendChild(delBtn);
+    row.appendChild(header);
+    const checks=document.createElement('div');
+    checks.className='slot-checks';
+    state.slots.forEach(slot=>{
+      const label=document.createElement('label');
+      const chk=document.createElement('input');
+      chk.type='checkbox';
+      chk.checked = slot.stepId === step.id;
+      chk.addEventListener('change',()=>{
+        if(chk.checked){
+          slot.stepId = step.id;
+        }else if(slot.stepId === step.id){
+          slot.stepId = state.steps[0]?.id || step.id;
+        }
+        renderUI();
+      });
+      label.appendChild(chk);
+      label.appendChild(document.createTextNode(slot.name));
+      checks.appendChild(label);
+    });
+    row.appendChild(checks);
+    stepsListEl.appendChild(row);
+  });
+}
+
+function ensureColorNames(obj){
+  if(!obj) return;
+  if(!Array.isArray(obj.colorNames)) obj.colorNames = [];
+  obj.colorNames.length = obj.materials.length;
+  obj.materials.forEach((mat, idx)=>{
+    if(!obj.colorNames[idx]){
+      obj.colorNames[idx] = mat?.name || '';
+    }
+  });
+}
+
+function renderButtonTextEditor(){
+  if(!buttonTextSection || !buttonTextBody) return;
+  const slot = state.currentSlotIndex === -1 ? null : state.currentSlot;
+  const shouldShow = !!slot && slot.textButtons;
+  buttonTextSection.style.display = shouldShow ? 'block' : 'none';
+  if(!shouldShow){
+    buttonTextBody.innerHTML = '';
+    return;
+  }
+  buttonTextBody.innerHTML = '';
+  if(slot && slot.canBeEmpty){
+    if(!slot.emptyLabel) slot.emptyLabel = 'empty';
+    const emptyRow=document.createElement('div');
+    emptyRow.className='button-text-row';
+    const preview=document.createElement('div');
+    preview.className='button-text-preview empty-option';
+    const img=document.createElement('img');
+    img.src='https://cdn.jsdelivr.net/npm/lucide-static@0.452.0/icons/x.svg';
+    img.alt=slot.emptyLabel;
+    preview.appendChild(img);
+    emptyRow.appendChild(preview);
+    const input=document.createElement('input');
+    input.type='text';
+    input.value=slot.emptyLabel || 'empty';
+    input.placeholder='empty';
+    input.addEventListener('change',()=>{
+      const value=input.value.trim();
+      if(!value){
+        input.value=slot.emptyLabel || 'empty';
+        return;
+      }
+      slot.emptyLabel = value;
+      img.alt = value;
+      if(isMobile()){
+        const stepId = state.currentStep?.id || state.steps[0]?.id;
+        renderSlotsMobile(state, slotListEl, slotCallbacks, objectCallbacks, stepId);
+      }else{
+        renderObjects(slot, objectsContainer, objectCallbacks);
+      }
+    });
+    emptyRow.appendChild(input);
+    buttonTextBody.appendChild(emptyRow);
+  }
+  if(!slot.objects.length){
+    const empty=document.createElement('p');
+    empty.className='button-text-empty';
+    empty.textContent='Add objects to edit button labels.';
+    buttonTextBody.appendChild(empty);
+    return;
+  }
+  slot.objects.forEach((obj)=>{
+    ensureColorNames(obj);
+    const group=document.createElement('div');
+    group.className='button-text-group';
+    const list=document.createElement('div');
+    list.className='button-text-list';
+    if(!obj.materials.length){
+      const emptyMat=document.createElement('p');
+      emptyMat.className='button-text-empty';
+      emptyMat.textContent='No materials available for this object.';
+      list.appendChild(emptyMat);
+    }else{
+      obj.materials.forEach((mat,matIndex)=>{
+        const row=document.createElement('div');
+        row.className='button-text-row';
+        const preview=document.createElement('div');
+        preview.className='button-text-preview';
+        const url=mat?.previews?.[0]?.subRes?.small || mat?.previews?.[0]?.url;
+        if(url){
+          const img=document.createElement('img');
+          img.src=url;
+          img.alt=mat?.name || '';
+          preview.appendChild(img);
+        }else{
+          preview.classList.add('empty');
+          if(mat?.name){
+            preview.textContent=mat.name[0].toUpperCase();
+          }
+        }
+        row.appendChild(preview);
+        const input=document.createElement('input');
+        input.type='text';
+        input.value=obj.colorNames?.[matIndex] || mat?.name || '';
+        input.placeholder=mat?.name || '';
+        input.addEventListener('change',()=>{
+          const value=input.value.trim();
+          if(!value){
+            input.value=obj.colorNames?.[matIndex] || mat?.name || '';
+            return;
+          }
+          ensureColorNames(obj);
+          obj.colorNames[matIndex] = value;
+        });
+        row.appendChild(input);
+        list.appendChild(row);
+      });
+    }
+    group.appendChild(list);
+    buttonTextBody.appendChild(group);
+  });
+}
+
+function syncCameraPanel(){
+  if(!viewEnabled) return;
+  viewEnabled.checked = !!state.viewPoint.enabled;
+  if(viewLeft) viewLeft.value = state.viewPoint.left ?? 0;
+  if(viewRight) viewRight.value = state.viewPoint.right ?? 0;
+  if(viewDown) viewDown.value = state.viewPoint.down ?? 0;
+  if(viewUp) viewUp.value = state.viewPoint.up ?? 0;
+  if(viewMinDist) viewMinDist.value = state.viewPoint.minDistance ?? 0;
+  if(viewDist) viewDist.value = state.viewPoint.maxDistance ?? 0;
+}
+
+function syncEnvironmentPanel(){
+  if(envUuidInput) envUuidInput.value = state.environment?.uuid || '';
+  if(envInfoEl){
+    if(state.environment){
+      envInfoEl.textContent = state.environment.name || state.environment.uuid || '';
+    }else{
+      envInfoEl.textContent = 'No environment loaded';
+    }
+  }
+  lockBtn.classList.toggle('active', envLocked);
 }
 
 function animate() {
@@ -580,6 +914,7 @@ function selectSlot(index){
   const stepIdx = state.steps.findIndex(st=>st.id===state.slots[index]?.stepId);
   if(stepIdx!==-1) state.currentStepIndex = stepIdx;
   renderUI();
+  if (activeTab !== 'slot') setActiveTab('slot');
   activateSlot(state.currentSlot);
   const el = slotListEl.children[state.slots.filter(s=>s.stepId===state.currentStep.id).indexOf(state.currentSlot)+1];
   if (el) el.scrollIntoView({ block: 'nearest' });
@@ -623,26 +958,47 @@ const slotCallbacks = {
 const objectCallbacks = {
   onSelectObject(index) {
     const slot = state.currentSlot;
+    if(!slot) return;
     slot.selectedObjectIndex = index;
     renderUI();
-    loadSlot(slot, true);
+    const current = state.currentSlot;
+    if(current){
+      loadSlot(current, true);
+      activateSlot(current);
+    } else {
+      activateSlot(null);
+    }
   },
   onSelectMaterial(objIndex, matIndex) {
     const slot = state.currentSlot;
+    if(!slot) return;
     slot.selectedObjectIndex = objIndex;
     const obj = slot.objects[objIndex];
     obj.selectedMaterial = matIndex;
     renderUI();
-    loadSlot(slot, true);
+    const current = state.currentSlot;
+    if(current){
+      loadSlot(current, true);
+      activateSlot(current);
+    } else {
+      activateSlot(null);
+    }
   },
   onDelete(objIndex) {
     const slot = state.currentSlot;
+    if(!slot) return;
     slot.objects.splice(objIndex, 1);
     if (slot.selectedObjectIndex >= slot.objects.length) {
-      slot.selectedObjectIndex = slot.objects.length - 1;
+      slot.selectedObjectIndex = slot.canBeEmpty ? -1 : slot.objects.length - 1;
     }
     renderUI();
-    loadSlot(slot, true);
+    const current = state.currentSlot;
+    if(current){
+      loadSlot(current, true);
+      activateSlot(current);
+    } else {
+      activateSlot(null);
+    }
   }
 };
 
@@ -690,34 +1046,56 @@ importInput && importInput.addEventListener('change', async e => {
   if (importInput) importInput.value = '';
 });
 
-stepsBtn.addEventListener('click', () => {
-  openStepsModal(stepsModal, state, renderUI);
+infoNameInput?.addEventListener('input', () => {
+  state.setMeta({ name: infoNameInput.value });
 });
 
-viewBtn.addEventListener('click', () => {
-  if (!viewEnabled || !viewLeft || !viewRight || !viewDown || !viewUp || !viewDist || !viewMove) return;
-  viewEnabled.checked = state.viewPoint.enabled;
-  viewLeft.value = state.viewPoint.left;
-  viewRight.value = state.viewPoint.right;
-  viewDown.value = state.viewPoint.down;
-  viewUp.value = state.viewPoint.up;
-  viewDist.value = state.viewPoint.maxDistance;
-  viewMove.checked = state.viewPoint.allowMovement;
-  viewModal.style.display = 'block';
+infoDescriptionInput?.addEventListener('input', () => {
+  state.setMeta({ description: infoDescriptionInput.value });
 });
-saveViewBtn.addEventListener('click', () => {
-  if (!viewEnabled || !viewLeft || !viewRight || !viewDown || !viewUp || !viewDist || !viewMove) return;
-  state.viewPoint.enabled = viewEnabled.checked;
-  state.viewPoint.left = parseFloat(viewLeft.value) || 0;
-  state.viewPoint.right = parseFloat(viewRight.value) || 0;
-  state.viewPoint.down = parseFloat(viewDown.value) || 0;
-  state.viewPoint.up = parseFloat(viewUp.value) || 0;
-  state.viewPoint.maxDistance = parseFloat(viewDist.value) || 0;
-  state.viewPoint.allowMovement = viewMove.checked;
-  viewModal.style.display = 'none';
-  if (viewPreview) applyViewPreview();
+
+authTokenInput?.addEventListener('input', () => {
+  state.setAuthToken(authTokenInput.value);
 });
-closeViewBtn.addEventListener('click', ()=>{viewModal.style.display='none';});
+
+uploadConfigBtn?.addEventListener('click', async () => {
+  if (!state.meta.uuid) {
+    alert('UUID is missing.');
+    return;
+  }
+  if (!state.meta.ownerId) {
+    alert('Owner UUID is missing.');
+    return;
+  }
+  const token = state.authToken?.trim();
+  if (!token) {
+    alert('Enter the authorization token.');
+    return;
+  }
+  const currentVersion = Number.isFinite(Number(state.meta.version)) ? Number(state.meta.version) : 0;
+  const nextVersion = currentVersion + 1;
+  const payload = {
+    uuid: state.meta.uuid,
+    version: nextVersion,
+    type: state.meta.type || 'config',
+    data: state.exportJSON(),
+    name: state.meta.name || '',
+    description: state.meta.description || '',
+    ownerId: state.meta.ownerId
+  };
+  try {
+    showLoading();
+    await uploadConfiguration(payload, token);
+    state.setMeta({ version: nextVersion });
+    syncInfoPanel();
+    alert('Configuration uploaded.');
+  } catch (err) {
+    const message = err && err.message ? err.message : 'Unknown error';
+    alert(`Upload failed: ${message}`);
+  } finally {
+    hideLoading();
+  }
+});
 
 viewToggleBtn.addEventListener('click',()=>{
   viewPreview = !viewPreview;
@@ -736,52 +1114,74 @@ function changeStep(delta){
 
 prevStepBtn.addEventListener('click',()=>changeStep(-1));
 nextStepBtn.addEventListener('click',()=>changeStep(1));
-delStepBtn.addEventListener('click',()=>{
-  if(state.steps.length<=1) return;
-  const step = state.currentStep;
-  const idx = state.steps.indexOf(step);
-  state.steps.splice(idx,1);
-  state.slots.forEach(s=>{ if(s.stepId===step.id) s.stepId = state.steps[0].id; });
-  if(state.currentStepIndex>=state.steps.length) state.currentStepIndex=0;
-  renderUI();
-});
 
-variantSelect.addEventListener('change',()=>{
-  state.currentVariantIndex=parseInt(variantSelect.value); state.currentSlotIndex=-1; state.currentStepIndex=0;
+addVariantBtn.addEventListener('click',()=>{
+  state.addVariant();
+  variantEditIndex = state.currentVariantIndex;
   renderUI();
   reloadScene();
 });
-addVariantBtn.addEventListener('click',()=>{state.addVariant(); renderVariants(); renderUI(); reloadScene();});
-delVariantBtn.addEventListener('click',()=>{state.deleteCurrentVariant(); renderVariants(); renderUI(); reloadScene();});
-renVariantBtn.addEventListener('click',()=>{const name=prompt('Variant name',state.currentVariant.name); if(name){state.renameCurrentVariant(name); renderVariants();}});
+delVariantBtn.addEventListener('click',()=>{
+  state.deleteCurrentVariant();
+  variantEditIndex = null;
+  renderUI();
+  reloadScene();
+});
+renVariantBtn.addEventListener('click',()=>{
+  if(state.variants.length===0) return;
+  variantEditIndex = state.currentVariantIndex;
+  renderVariants();
+});
 
-envBtn.addEventListener('click',()=>{envModal.style.display='block';});
 lockBtn.addEventListener('click',()=>{
   envLocked = !envLocked;
-  lockBtn.classList.toggle('active', envLocked);
   if(envLocked && transform.object===envMesh) transform.detach();
   if(!envLocked && envMesh && state.currentSlotIndex===-1 && transformMode!==null) transform.attach(envMesh);
   updateCoordInputs();
+  syncEnvironmentPanel();
 });
-closeEnvBtn.addEventListener('click',()=>{envModal.style.display='none';});
 loadEnvBtn.addEventListener('click',async()=>{
   const uuid=envUuidInput.value.trim(); if(!uuid) return;
   const details=await fetchObjectDetails(uuid); if(!details) return;
   const env={uuid,name:details.name,materials:details.materials||[],selectedMaterial:0,transform:{position:[0,0,0],rotation:[0,0,0],scale:[1,1,1]}};
   state.setEnvironment(env);
-  envModal.style.display='none';
   loadEnvironment(env);
+  syncEnvironmentPanel();
 });
-  removeEnvBtn.addEventListener('click',()=>{
-    state.removeEnvironment();
-    if(envMesh){
-      if(transform.object===envMesh) transform.detach();
-      scene.remove(envMesh); envMesh=null;
-    }
-    setHovered(hovered && hovered.userData?.envObj ? null : hovered);
-    envModal.style.display='none';
-    updateCoordInputs();
+removeEnvBtn.addEventListener('click',()=>{
+  state.removeEnvironment();
+  if(envMesh){
+    if(transform.object===envMesh) transform.detach();
+    scene.remove(envMesh); envMesh=null;
+  }
+  setHovered(hovered && hovered.userData?.envObj ? null : hovered);
+  updateCoordInputs();
+  syncEnvironmentPanel();
+});
+
+addStepBtn?.addEventListener('click',()=>{
+  state.addStep(`Step ${state.steps.length + 1}`);
+  renderUI();
+});
+
+viewEnabled?.addEventListener('change',()=>{
+  state.viewPoint.enabled = viewEnabled.checked;
+  if(viewPreview) applyViewPreview();
+});
+[
+  { el: viewLeft, prop: 'left' },
+  { el: viewRight, prop: 'right' },
+  { el: viewDown, prop: 'down' },
+  { el: viewUp, prop: 'up' },
+  { el: viewMinDist, prop: 'minDistance' },
+  { el: viewDist, prop: 'maxDistance' }
+].forEach(({el, prop})=>{
+  el?.addEventListener('change',()=>{
+    const val = parseFloat(el.value);
+    state.viewPoint[prop] = isNaN(val) ? 0 : val;
+    if(viewPreview) applyViewPreview();
   });
+});
 
 function updateTransformButtons() {
   moveBtn.classList.toggle('active', transformMode === 'translate');
@@ -858,62 +1258,37 @@ inheritBtn.addEventListener('click', () => {
   if (slot) loadSlot(slot, true);
 });
 
-function renderVarModal(slot){
-  varList.innerHTML='';
-  slot.objects.forEach((obj,oIdx)=>{
-    obj.materials.forEach((mat,mIdx)=>{
-      const row=document.createElement('div');
-      row.className='var-row';
-      const label=document.createElement('label');
-      label.textContent=`${obj.name} - ${mat.name}`;
-      const input=document.createElement('input');
-      input.type='text';
-      input.value=obj.colorNames?.[mIdx] || `${obj.name} ${mat.name}`;
-      input.dataset.idx=`${oIdx}-${mIdx}`;
-      row.appendChild(label);
-      row.appendChild(input);
-      varList.appendChild(row);
-    });
-  });
-}
-
 canBeEmptyChk.addEventListener('change', () => {
   const slot = state.currentSlot;
-  if (slot) slot.canBeEmpty = canBeEmptyChk.checked;
+  if (!slot) return;
+  slot.canBeEmpty = canBeEmptyChk.checked;
+  if(slot.canBeEmpty){
+    if(!slot.emptyLabel) slot.emptyLabel = 'empty';
+  }else if(slot.selectedObjectIndex === -1 && slot.objects.length){
+    slot.selectedObjectIndex = 0;
+  }
+  renderUI();
+  const current = state.currentSlot;
+  if(current){
+    loadSlot(current, true);
+    activateSlot(current);
+  } else {
+    activateSlot(null);
+  }
 });
 
 textButtonsChk.addEventListener('change', () => {
   const slot = state.currentSlot;
   if (slot) slot.textButtons = textButtonsChk.checked;
-});
-
-slotSettingsBtn.addEventListener('click', () => {
-  const slot = state.currentSlot;
-  if (!slot) return;
-  renderVarModal(slot);
-  varModal.style.display = 'block';
-});
-
-closeVarBtn.addEventListener('click', () => {
-  varModal.style.display = 'none';
-});
-
-saveVarBtn.addEventListener('click', () => {
-  const slot = state.currentSlot;
-  if (!slot) { varModal.style.display = 'none'; return; }
-  varList.querySelectorAll('input').forEach(inp => {
-    const [oIdx, mIdx] = inp.dataset.idx.split('-').map(Number);
-    if (!slot.objects[oIdx].colorNames) slot.objects[oIdx].colorNames = [];
-    slot.objects[oIdx].colorNames[mIdx] = inp.value;
-  });
-  varModal.style.display = 'none';
+  renderButtonTextEditor();
+  updatePanels();
 });
 
 async function handleImport(data) {
   reloadScene();
   setTransformMode(null);
   await state.importJSON(data, fetchObjectDetails);
-  renderVariants();
+  variantEditIndex = null;
   renderUI();
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
   textButtonsChk.checked = state.currentSlot?.textButtons || false;
@@ -926,24 +1301,31 @@ state.addSlot();
 function renderUI(){
   if(state.currentStepIndex>=state.steps.length) state.currentStepIndex = 0;
   const step = state.currentStep;
+  state.steps.forEach((s,i)=>{ s.index = i; });
   stepNameEl.textContent = step.name;
   stepControls.style.display = state.steps.length>1 ? 'flex' : 'none';
   renderVariants();
+  renderStepsEditor();
   if(state.currentSlotIndex !== -1 && state.currentSlot?.stepId !== step.id){
     const idx = state.slots.findIndex(s=>s.stepId===step.id);
     state.currentSlotIndex = idx;
   }
   if(isMobile()){
-    objectsContainer.parentElement.style.display='none';
+    if(slotDetailSection) slotDetailSection.style.display='none';
     renderSlotsMobile(state, slotListEl, slotCallbacks, objectCallbacks, step.id);
   }else{
-    objectsContainer.parentElement.style.display='block';
+    if(slotDetailSection) slotDetailSection.style.display='flex';
     renderSlots(state, slotListEl, slotCallbacks, step.id);
     renderObjects(state.currentSlot, objectsContainer, objectCallbacks);
   }
   canBeEmptyChk.checked = state.currentSlot?.canBeEmpty || false;
   textButtonsChk.checked = state.currentSlot?.textButtons || false;
+  renderButtonTextEditor();
   updatePanels();
+  syncCameraPanel();
+  syncEnvironmentPanel();
+  updateSlotTabState();
+  syncInfoPanel();
 }
 
 renderUI();
@@ -952,3 +1334,11 @@ textButtonsChk.checked = state.currentSlot?.textButtons || false;
 activateSlot(state.currentSlot);
 updateTransformButtons();
 reloadScene();
+
+const urlParams = new URLSearchParams(location.search);
+const configUuid = urlParams.get('uuid');
+if(configUuid){
+  loadConfigurationFromUuid(configUuid);
+} else {
+  syncInfoPanel();
+}

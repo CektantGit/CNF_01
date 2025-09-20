@@ -5,6 +5,15 @@ export class ConfiguratorState {
     this.currentSlotIndex = -1;
     this.currentStepIndex = 0;
     this.environment = null;
+    this.meta = {
+      uuid: '',
+      version: null,
+      type: '',
+      name: '',
+      description: '',
+      ownerId: ''
+    };
+    this.authToken = '';
     const def = this._createVariant('Variant 1');
     this.variants.push(def);
   }
@@ -28,8 +37,8 @@ export class ConfiguratorState {
         right: 0,
         down: 0,
         up: 0,
+        minDistance: 0,
         maxDistance: 0,
-        allowMovement: false,
         enabled: false,
         hidden: false
       }
@@ -62,6 +71,7 @@ export class ConfiguratorState {
       canBeEmpty: s.canBeEmpty,
       hidden: s.hidden,
       textButtons: s.textButtons || false,
+      emptyLabel: s.emptyLabel || 'empty',
       stepId: stepMap.get(s.stepId) || steps[0].id
     }));
     const viewPoint = {
@@ -71,8 +81,8 @@ export class ConfiguratorState {
       right: src.viewPoint.right,
       down: src.viewPoint.down,
       up: src.viewPoint.up,
+      minDistance: src.viewPoint.minDistance ?? 0,
       maxDistance: src.viewPoint.maxDistance,
-      allowMovement: src.viewPoint.allowMovement,
       enabled: src.viewPoint.enabled || false,
       hidden: src.viewPoint.hidden || false
     };
@@ -120,6 +130,7 @@ export class ConfiguratorState {
       canBeEmpty: false,
       hidden: false,
       textButtons: false,
+      emptyLabel: 'empty',
       stepId
     };
     this.slots.push(slot);
@@ -127,7 +138,7 @@ export class ConfiguratorState {
     return slot;
   }
 
-  addSlotFromData(id, name, objects = [], canBeEmpty = false, stepId = this.steps[0].id, textButtons = false) {
+  addSlotFromData(id, name, objects = [], canBeEmpty = false, stepId = this.steps[0].id, textButtons = false, emptyLabel = 'empty') {
     const slot = {
       id,
       name,
@@ -136,6 +147,7 @@ export class ConfiguratorState {
       canBeEmpty,
       hidden: false,
       textButtons,
+      emptyLabel,
       stepId
     };
     this.slots.push(slot);
@@ -200,17 +212,17 @@ export class ConfiguratorState {
       for(const [vid,vdata] of Object.entries(data.variants)){
         const variant=this._createVariant(vdata.name||'Variant');
         variant.id=vid;
-        variant.viewPoint={
-          position:vdata.viewPoint?.position||[0,0,0],
-          rotation:vdata.viewPoint?.rotation||[0,0,0],
-          left:vdata.viewPoint?.left||0,
-          right:vdata.viewPoint?.right||0,
-          down:vdata.viewPoint?.down||0,
-          up:vdata.viewPoint?.up||0,
-          maxDistance:vdata.viewPoint?.maxDistance||0,
-          allowMovement:!!vdata.viewPoint?.allowMovement,
-          enabled:!!vdata.viewPoint?.enabled,
-          hidden:!!vdata.viewPoint?.hidden
+        variant.viewPoint = {
+          position: vdata.viewPoint?.position || [0,0,0],
+          rotation: vdata.viewPoint?.rotation || [0,0,0],
+          left: vdata.viewPoint?.left || 0,
+          right: vdata.viewPoint?.right || 0,
+          down: vdata.viewPoint?.down || 0,
+          up: vdata.viewPoint?.up || 0,
+          minDistance: vdata.viewPoint?.minDistance || 0,
+          maxDistance: vdata.viewPoint?.maxDistance || 0,
+          enabled: !!vdata.viewPoint?.enabled,
+          hidden: !!vdata.viewPoint?.hidden
         };
         variant.steps = Object.entries(vdata.steps||{}).map(([id,s])=>({id,name:s.name,index:s.index||0}));
         if(!variant.steps.length) variant.steps=[{id:crypto.randomUUID(),name:'Step 1',index:0}];
@@ -221,23 +233,23 @@ export class ConfiguratorState {
             const det=await fetchDetails(objData.uuid); if(!det) continue;
             objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,colorNames:objData.colorNames||objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
           }
-          variant.slots.push({id:sid,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,stepId:slotData.step||variant.steps[0].id});
+          variant.slots.push({id:sid,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,emptyLabel:slotData.emptyLabel||slotData.emptyName||'empty',stepId:slotData.step||variant.steps[0].id});
         }
         this.variants.push(variant);
       }
     } else {
       const variant=this._createVariant('Variant 1');
-      variant.viewPoint={
-        position:data.viewPoint?.position||[0,0,0],
-        rotation:data.viewPoint?.rotation||[0,0,0],
-        left:data.viewPoint?.left||0,
-        right:data.viewPoint?.right||0,
-        down:data.viewPoint?.down||0,
-        up:data.viewPoint?.up||0,
-        maxDistance:data.viewPoint?.maxDistance||0,
-        allowMovement:!!data.viewPoint?.allowMovement,
-        enabled:!!data.viewPoint?.enabled,
-        hidden:!!data.viewPoint?.hidden
+      variant.viewPoint = {
+        position: data.viewPoint?.position || [0,0,0],
+        rotation: data.viewPoint?.rotation || [0,0,0],
+        left: data.viewPoint?.left || 0,
+        right: data.viewPoint?.right || 0,
+        down: data.viewPoint?.down || 0,
+        up: data.viewPoint?.up || 0,
+        minDistance: data.viewPoint?.minDistance || 0,
+        maxDistance: data.viewPoint?.maxDistance || 0,
+        enabled: !!data.viewPoint?.enabled,
+        hidden: !!data.viewPoint?.hidden
       };
       variant.steps = Object.entries(data.steps||{}).map(([id,s])=>({id,name:s.name,index:s.index||0}));
       if(!variant.steps.length) variant.steps=[{id:crypto.randomUUID(),name:'Step 1',index:0}];
@@ -248,7 +260,7 @@ export class ConfiguratorState {
           const det=await fetchDetails(objData.uuid); if(!det) continue;
           objects.push({uuid:objData.uuid,name:det.name,materials:det.materials||[],selectedMaterial:0,colorNames:objData.colorNames||objData.variationNames||((det.materials||[]).map(m=>m.name)),transform:{position:objData.position||[0,0,0],rotation:objData.rotation||[0,0,0],scale:objData.scale||[1,1,1]}});
         }
-        variant.slots.push({id,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,stepId:slotData.step||variant.steps[0].id});
+        variant.slots.push({id,name:slotData.name,objects,selectedObjectIndex:objects.length?0:-1,canBeEmpty:slotData.canBeEmpty,hidden:false,textButtons:slotData.textButtons||false,emptyLabel:slotData.emptyLabel||slotData.emptyName||'empty',stepId:slotData.step||variant.steps[0].id});
       }
       this.variants.push(variant);
     }
@@ -271,7 +283,7 @@ export class ConfiguratorState {
       variant.steps.forEach(step=>{stepsOut[step.id]={name:step.name,index:step.index};});
       const slotsOut={};
       variant.slots.forEach(slot=>{
-        slotsOut[slot.id]={name:slot.name,canBeEmpty:slot.canBeEmpty,textButtons:slot.textButtons,step:slot.stepId,objects:slot.objects.map(o=>({uuid:o.uuid,position:o.transform.position,rotation:o.transform.rotation,scale:o.transform.scale,colorNames:o.colorNames}))};
+        slotsOut[slot.id]={name:slot.name,canBeEmpty:slot.canBeEmpty,textButtons:slot.textButtons,emptyLabel:slot.emptyLabel||'empty',step:slot.stepId,objects:slot.objects.map(o=>({uuid:o.uuid,position:o.transform.position,rotation:o.transform.rotation,scale:o.transform.scale,colorNames:o.colorNames}))};
       });
       const out={name:variant.name,steps:stepsOut,slots:slotsOut,viewPoint:{
         position:variant.viewPoint.position,
@@ -280,8 +292,8 @@ export class ConfiguratorState {
         right:variant.viewPoint.right,
         down:variant.viewPoint.down,
         up:variant.viewPoint.up,
+        minDistance:variant.viewPoint.minDistance ?? 0,
         maxDistance:variant.viewPoint.maxDistance,
-        allowMovement:variant.viewPoint.allowMovement,
         enabled:variant.viewPoint.enabled,
         hidden:variant.viewPoint.hidden
       }};
@@ -290,5 +302,13 @@ export class ConfiguratorState {
     const out={version:2,variants:variantsOut};
     if(this.environment){ out.environment={uuid:this.environment.uuid,position:this.environment.transform.position,rotation:this.environment.transform.rotation,scale:this.environment.transform.scale}; }
     return JSON.stringify(out,null,2);
+  }
+
+  setMeta(meta = {}){
+    this.meta = { ...this.meta, ...meta };
+  }
+
+  setAuthToken(token = ''){
+    this.authToken = token;
   }
 }

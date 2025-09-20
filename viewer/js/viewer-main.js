@@ -5,7 +5,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { viewInAR } from './ar.js';
 import { ViewerState } from './viewer-state.js';
 import { renderSlots, renderVariants } from './viewer-ui.js';
-import { fetchObjectDetails } from './viewer-api.js';
+import { fetchObjectDetails, fetchConfiguration } from './viewer-api.js';
 
 const container = document.getElementById('viewerCanvas');
 const slotPanel = document.getElementById('slotPanel');
@@ -46,12 +46,6 @@ const pmrem = new THREE.PMREMGenerator(renderer);
     }
   );
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-scene.add(ambient);
-const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-dirLight.position.set(5, 10, 7.5);
-scene.add(dirLight);
-
 const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 function resize() {
@@ -71,6 +65,7 @@ function animate() {
 animate();
 
 const state = new ViewerState();
+let baseConfigUuid = null;
 const loader = new GLTFLoader();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -112,8 +107,9 @@ function applyViewPoint(){
   } else {
     controls.maxAzimuthAngle = Infinity;
   }
+  controls.minDistance = vp.minDistance>0?vp.minDistance:0;
   controls.maxDistance = vp.maxDistance>0?vp.maxDistance:Infinity;
-  controls.enablePan = vp.allowMovement;
+  controls.enablePan = false;
   controls.update();
 }
 
@@ -124,6 +120,7 @@ function resetViewPoint(){
   controls.maxPolarAngle=Math.PI;
   controls.minAzimuthAngle=-Infinity;
   controls.maxAzimuthAngle=Infinity;
+  controls.minDistance=0;
   controls.maxDistance=Infinity;
   controls.enablePan=true;
   controls.update();
@@ -245,10 +242,11 @@ async function loadAll(){
     if(s.currentMesh){ scene.remove(s.currentMesh); s.currentMesh=null; }
   });
 
-  const slotsToLoad = state.slots.filter(s=>s.selectedIndex>=0);
+  const slotsToLoad = state.slots.filter(s=>s.selectedIndex>=0 && s.objects[s.selectedIndex]);
   const tasks = [];
   if(state.environment){
-    const mat=state.environment.materials[state.environment.selectedMaterial];
+    const mats = state.environment.materials || [];
+    const mat = mats[state.environment.selectedMaterial || 0];
     const url=mat?.native?.glbUrl;
     if(url) tasks.push({type:'env', obj:state.environment, url});
   }
@@ -383,11 +381,28 @@ arBtn.addEventListener('click', async () => {
 (async () => {
   showLoading(0, true);
   try {
-    const res = await fetch('default-config.json');
-    const data = await res.json();
-    await state.loadConfig(data, fetchObjectDetails);
-    const params=new URLSearchParams(location.search);
-    const cfg=params.get('cfg');
+    const params = new URLSearchParams(location.search);
+    baseConfigUuid = params.get('uuid');
+    let configData = null;
+    if (baseConfigUuid) {
+      const remote = await fetchConfiguration(baseConfigUuid);
+      if (remote?.uuid) {
+        baseConfigUuid = remote.uuid;
+      }
+      if (remote?.data) {
+        try {
+          configData = JSON.parse(remote.data);
+        } catch (err) {
+          console.error('Remote config parse failed', err);
+        }
+      }
+    }
+    if (!configData) {
+      const res = await fetch('default-config.json');
+      configData = await res.json();
+    }
+    await state.loadConfig(configData, fetchObjectDetails);
+    const cfg = params.get('cfg');
     if(cfg) applyEncodedConfig(cfg);
     await loadAll();
     if (state.viewPoint.enabled) {
@@ -396,9 +411,9 @@ arBtn.addEventListener('click', async () => {
       resetViewPoint();
     }
     updateShare();
-    hideLoading();
   } catch (err) {
-    console.error('Default config load failed', err);
+    console.error('Config load failed', err);
+  } finally {
     hideLoading();
   }
 })();
@@ -448,7 +463,12 @@ function updateShare(){
   }
   arBtn.style.display='none';
   qrOverlay.style.display='inline-flex';
-  const url = location.origin + location.pathname + '?cfg=' + encodeConfig();
+  const params = new URLSearchParams();
+  if(baseConfigUuid){
+    params.set('uuid', baseConfigUuid);
+  }
+  params.set('cfg', encodeConfig());
+  const url = `${location.origin}${location.pathname}?${params.toString()}`;
   qrCanvas.innerHTML = '';
   new QRCode(qrCanvas, {
     text: url,
